@@ -3,7 +3,8 @@
 
 #include "ys_controlinterface.h"
 #include "ys_global.h"
-
+#include "ys_staticconfig.h"
+#include "ys_dynamicconfig.h"
 
 
 class ysServer: public QObject
