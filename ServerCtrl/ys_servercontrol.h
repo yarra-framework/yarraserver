@@ -26,6 +26,10 @@ signals:
 public slots:
     void run();
 
+    void onConnected();
+    void onDisconnected();
+    void onSocketError(QLocalSocket::LocalSocketError socketError);
+
 protected:
     void printUsage();
 
