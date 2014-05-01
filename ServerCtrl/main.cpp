@@ -5,7 +5,6 @@
 
 int main(int argc, char *argv[])
 {
-    YS_OUT("");
     QCoreApplication app(argc, argv);
     ysServerControl instance;
 
@@ -14,8 +13,6 @@ int main(int argc, char *argv[])
              &app, SLOT(quit()));
 
     QTimer::singleShot(10, &instance, SLOT(run()));
-    int result=app.exec();
-
-    YS_OUT("");
-    return result;
+    return app.exec();
 }
+

@@ -13,6 +13,7 @@ struct ysHaltDetection
     {
         signal(SIGINT,   &ysHaltDetection::serverHalt);
         signal(SIGTERM,  &ysHaltDetection::serverHalt);
+        signal(SIGHUP,   &ysHaltDetection::preventHUP);
         //signal(SIGBREAK, &CleanExit::exitQt);
     }
 
@@ -20,6 +21,11 @@ struct ysHaltDetection
     {
         YS_OUT(" ## HALT requested");
         instancePtr->forceHalt();
+    }
+
+    static void preventHUP(int sig)
+    {
+        // Prevents that the server will be shutdown when the terminal is closed.
     }
 };
 

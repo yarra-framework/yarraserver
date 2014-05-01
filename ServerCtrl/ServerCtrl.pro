@@ -19,4 +19,5 @@ SOURCES += main.cpp \
     ys_servercontrol.cpp
 
 HEADERS += \
-    ys_servercontrol.h
+    ys_servercontrol.h \
+    ys_parserformat.h

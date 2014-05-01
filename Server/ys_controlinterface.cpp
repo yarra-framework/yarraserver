@@ -1,6 +1,7 @@
 #include "ys_controlinterface.h"
 #include "ys_global.h"
 #include "ys_server.h"
+#include "ys_controlapi.h"
 
 ysControlInterface::ysControlInterface()
 {
@@ -48,7 +49,8 @@ bool ysControlInterface::prepare()
         }
     }
 
-    ipcServer.setSocketOptions(QLocalServer::UserAccessOption);
+    //ipcServer.setSocketOptions(QLocalServer::UserAccessOption);
+    connect(&ipcServer, SIGNAL(newConnection()), this, SLOT(receiveRequest()));
 
     if (!ipcServer.listen(YS_CI_ID))
     {
@@ -80,12 +82,80 @@ void ysControlInterface::finish()
 }
 
 
-
-void ysControlInterface::requestServerShutdown()
+void ysControlInterface::receiveRequest()
 {
-    YS_OUT("ControlInterface (threadID " + QString::number((long)QThread::currentThreadId()) + ")");
+    QLocalSocket* clientConnection = ipcServer.nextPendingConnection();
+    connect(clientConnection, SIGNAL(disconnected()),
+            clientConnection, SLOT(deleteLater()));
 
+    if (clientConnection->waitForReadyRead(1000))
+    {
+        char cmd=YS_CTRL_INVALID;
+        clientConnection->read(&cmd,1);
+
+        switch (cmd)
+        {
+        case YS_CTRL_TEST:
+            processTestRequest(clientConnection);
+            break;
+
+        case YS_CTRL_SHUTDOWN:
+            processShutdownRequest(clientConnection);
+            break;
+
+        case YS_CTRL_HALT:
+            processHaltRequest(clientConnection);
+            break;
+
+        case YS_CTRL_INVALID:
+        default:
+            YS_OUT("WARNING: Invalid IPC request.")
+            break;
+        }
+    }
+    else
+    {
+        // Received IPC connection without request
+        YS_OUT("WARNING: Incomplete IPC request.")
+    }
+
+    clientConnection->disconnectFromServer();
+}
+
+
+void ysControlInterface::processTestRequest(QLocalSocket* socket)
+{
+    writeToSocket(YS_CTRL_ACK, socket);
+}
+
+
+void ysControlInterface::processShutdownRequest(QLocalSocket* socket)
+{
+    //YS_OUT("ControlInterface (threadID " + QString::number((long)QThread::currentThreadId()) + ")");
+    writeToSocket(YS_CTRL_ACK, socket);
     parent->setShutdownRequest();
 }
+
+
+void ysControlInterface::processHaltRequest(QLocalSocket* socket)
+{
+    writeToSocket(YS_CTRL_ACK, socket);
+    parent->forceHalt();
+}
+
+
+void ysControlInterface::writeToSocket(QString string, QLocalSocket* socket)
+{
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+    out << (quint16)0;
+    out << QString(string);
+    out.device()->seek(0);
+    out << (quint16)(block.size() - sizeof(quint16));
+    socket->write(block);
+    socket->flush();
+}
+
 
 

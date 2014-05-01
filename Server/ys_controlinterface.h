@@ -21,10 +21,14 @@ public:
     QLocalServer ipcServer;
     QTimer testTimer;
 
+    void processTestRequest(QLocalSocket* socket);
+    void processShutdownRequest(QLocalSocket* socket);
+    void processHaltRequest(QLocalSocket* socket);
+
+    void writeToSocket(QString string, QLocalSocket* socket);
 
 public slots:
-    void requestServerShutdown();
-
+    void receiveRequest();
 
 private:
    ysServer* parent;
