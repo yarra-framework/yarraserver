@@ -17,13 +17,13 @@ struct ysHaltDetection
         //signal(SIGBREAK, &CleanExit::exitQt);
     }
 
-    static void serverHalt(int sig)
+    static void serverHalt(int)
     {
         YS_OUT(" ## HALT requested");
         instancePtr->forceHalt();
     }
 
-    static void preventHUP(int sig)
+    static void preventHUP(int)
     {
         // Prevents that the server will be shutdown when the terminal is closed.
     }
@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
     ysServer instance;
     instancePtr=&instance;
     ysHaltDetection haltDetection;
+    ysRuntimeAccess::setInstance(&instance);
 
     // Connect the application signals
     QObject::connect(&instance, SIGNAL(finished()),

@@ -1,10 +1,15 @@
 #ifndef YS_SERVER_H
 #define YS_SERVER_H
 
-#include "ys_controlinterface.h"
+
 #include "ys_global.h"
+#include "ys_controlinterface.h"
 #include "ys_staticconfig.h"
 #include "ys_dynamicconfig.h"
+#include "ys_log.h"
+#include "ys_job.h"
+#include "ys_process.h"
+
 
 
 class ysServer: public QObject
@@ -22,9 +27,7 @@ public slots:
     void run();
     void aboutToQuitApp();
 
-
 public:
-
     bool prepare();
     bool runLoop();
 
@@ -33,7 +36,12 @@ public:
 
     void safeWait(int ms);
 
+    // Instances of the individual server modules
+    ysLog              log;
+    ysStaticConfig     staticConfig;
+    ysDynamicConfig    dynamicConfig;
     ysControlInterface controlInterface;
+
 
 protected:
     bool shutdownRequested;
@@ -61,7 +69,6 @@ inline void ysServer::safeWait(int ms)
         QCoreApplication::processEvents();
     }
 }
-
 
 
 #endif // YS_SERVER_H

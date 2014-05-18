@@ -42,6 +42,22 @@ bool ysServer::prepare()
     YS_OUT("");
     YS_OUT("Initializing server...\n");
 
+    if (!staticConfig.readConfiguration())
+    {
+        YS_OUT("ERROR: Reading server configuration failed.");
+        YS_OUT("Cannot launch server. Shutting down.");
+
+        return false;
+    }
+
+    if (!dynamicConfig.validateAllReconModes())
+    {
+        YS_OUT("ERROR: Some reconstruction modes have not been configured correctly.");
+        YS_OUT("Please check configuration. Shutting down.");
+
+        return false;
+    }
+
     return true;
 }
 
