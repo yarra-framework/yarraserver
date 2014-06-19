@@ -9,6 +9,7 @@ ysServer::ysServer(QObject *parent) :
     controlInterface.setParent(this);
     shutdownRequested=false;
     haltRequested=false;
+    currentJob=0;
 }
 
 
@@ -58,6 +59,14 @@ bool ysServer::prepare()
         return false;
     }
 
+    if (!queue.prepare())
+    {
+        YS_OUT("ERROR: Preparing queing directories failed.");
+        YS_OUT("Please check installation and permissions. Shutting down.");
+
+        return false;
+    }
+
     return true;
 }
 
@@ -85,7 +94,39 @@ bool ysServer::runLoop()
 
     while (!shutdownRequested)
     {
+        // Read the current configuration of reconstruction modes
+        dynamicConfig.updateDynamicConfigList();
 
+        if (queue.isTaskAvailable())
+        {
+            // Ask the queue to fetch the next task to be processed and
+            // create a job instance for the task
+            currentJob=queue.fetchTask();
+
+            if (currentJob)
+            {
+                // ## TODO: Integrate error handling!!!
+
+                // Move all related files to work directory
+                queue.moveTaskToWorkPath(currentJob);
+
+                // Run the process
+                processor.runReconstruction(currentJob);
+                processor.runPostProcessing(currentJob);
+                processor.runStorage(currentJob);
+
+                // If requested by mode, move raw data to storage location
+                queue.moveTaskToStoragePath(currentJob);
+
+                // Delete all temporary files
+                queue.cleanWorkPath();
+                queue.cleanStoragePath();
+
+                // Discard the current job
+                YS_FREE(currentJob);
+
+            }
+        }
 
         // Sleep for 10ms to prevent excessive CPU usage during idle times
         safeWait(10);

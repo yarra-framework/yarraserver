@@ -16,7 +16,7 @@
 #define YS_FREEARR(x) if (x!=0) { delete[] x; x=0; }
 
 // Convenience macros for runtime access
-#define YS_RA ysRuntimeAccess::getInstance()
+#define YSRA ysRuntimeAccess::getInstance()
 
 
 

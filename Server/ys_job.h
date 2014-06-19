@@ -15,6 +15,8 @@ public:
 
     QString emailNotification;
     QString accNumber;
+    QString patientName;
+    QString protocolName;
 
     QString reconMode;
     QString systemName;
@@ -26,6 +28,8 @@ public:
     QString uniqueID;
 
     QString reconCallCmd;
+
+    bool readTaskFile(QString filename);
 
 
 protected:

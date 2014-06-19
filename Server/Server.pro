@@ -25,7 +25,8 @@ SOURCES += main.cpp \
     ys_runtimeaccess.cpp \
     ys_job.cpp \
     ys_process.cpp \
-    ys_notificationmail.cpp
+    ys_notificationmail.cpp \
+    ys_queue.cpp
 
 HEADERS += \
     ys_server.h \
@@ -38,4 +39,5 @@ HEADERS += \
     ys_runtimeaccess.h \
     ys_job.h \
     ys_process.h \
-    ys_notificationmail.h
+    ys_notificationmail.h \
+    ys_queue.h

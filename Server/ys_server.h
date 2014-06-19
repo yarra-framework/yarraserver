@@ -9,6 +9,7 @@
 #include "ys_log.h"
 #include "ys_job.h"
 #include "ys_process.h"
+#include "ys_queue.h"
 
 
 
@@ -41,6 +42,9 @@ public:
     ysStaticConfig     staticConfig;
     ysDynamicConfig    dynamicConfig;
     ysControlInterface controlInterface;
+    ysQueue            queue;
+    ysProcess          processor;
+    ysJob*             currentJob;
 
 
 protected:
