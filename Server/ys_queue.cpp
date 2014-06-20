@@ -1,4 +1,9 @@
+#include "ys_global.h"
 #include "ys_queue.h"
+
+#include "ys_server.h"
+#include "ys_staticconfig.h"
+
 
 ysQueue::ysQueue()
 {
@@ -7,7 +12,17 @@ ysQueue::ysQueue()
 
 bool ysQueue::prepare()
 {
-    // TODO
+    if (!queueDir.cd(YSRA->staticConfig.inqueuePath))
+    {
+        YS_OUT("ERROR: Unable to change to queue directory.");
+        return false;
+    }
+
+    QStringList taskFilter;
+    taskFilter <<  QString("*")+QString(YS_TASK_EXTENSION);
+    queueDir.setNameFilters(taskFilter);
+    queueDir.setFilter(QDir::Files);
+    queueDir.setSorting(QDir::Time);
 
     return true;
 }
@@ -15,6 +30,12 @@ bool ysQueue::prepare()
 
 bool ysQueue::isTaskAvailable()
 {
+    queueDir.refresh();
+    if (queueDir.entryList().count())
+    {
+        return true;
+    }
+
     return false;
 }
 
@@ -22,9 +43,36 @@ bool ysQueue::isTaskAvailable()
 ysJob* ysQueue::fetchTask()
 {
     bool invalidJob=false;
-
-    // TODO: Get task file for the next job to be processed
     QString taskFilename="";
+
+    queueDir.refresh();
+    int fileCount=queueDir.entryList().count();
+
+    if (fileCount==0)
+    {
+        // File disappeared?
+        return 0;
+    }
+
+    int fetchIndex=0;
+
+    while ((taskFilename=="") && (fetchIndex<fileCount))
+    {
+        // Get task file for the next job to be processed
+        taskFilename=queueDir.entryList().at(fetchIndex);
+
+        if (isTaskFileLocked(taskFilename))
+        {
+            // File is locked, so go on with the next older file
+            taskFilename="";
+        }
+    }
+
+    if (taskFilename=="")
+    {
+        // No unlocked file found. Possibly, the only available file is locked right now.
+        return 0;
+    }
 
     ysJob* newJob=new ysJob;
 
@@ -34,6 +82,18 @@ ysJob* ysQueue::fetchTask()
     }
 
     return newJob;
+}
+
+
+bool ysQueue::isTaskFileLocked(QString taskFile)
+{
+    QString lockFilename=taskFile;
+    lockFilename.truncate(lockFilename.indexOf("."));
+    lockFilename+=YS_LOCK_EXTENSION;
+
+    QLockFile lockFile(YSRA->staticConfig.inqueuePath + "/" + lockFilename);
+
+    return lockFile.isLocked();
 }
 
 
@@ -80,5 +140,15 @@ bool ysQueue::moveTaskToStoragePath(ysJob* job)
 
     return true;
 }
+
+
+bool moveFiles(QStringList files, QString sourcePath, QString targetPath)
+{
+    // TODO
+
+    return true;
+}
+
+
 
 

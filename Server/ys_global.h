@@ -11,6 +11,11 @@
 #define YS_CI_SETUPTIMOUT   1000
 #define YS_CI_FORCECMD      "--force"
 
+#define YS_MODE_EXTENSION      ".mode"
+#define YS_TASK_EXTENSION      ".task"
+#define YS_TASK_EXTENSION_PRIO "_prio"
+#define YS_LOCK_EXTENSION      ".lock"
+
 #define YS_OUT(x) std::cout << QString(x).toStdString() << std::endl;
 #define YS_FREE(x) if (x!=0) { delete x; x=0; }
 #define YS_FREEARR(x) if (x!=0) { delete[] x; x=0; }

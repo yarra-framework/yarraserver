@@ -31,6 +31,8 @@ public:
 
     bool readTaskFile(QString filename);
 
+    QStringList getAllFiles();
+
 
 protected:
     void generateUniqueID();

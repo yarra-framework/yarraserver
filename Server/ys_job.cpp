@@ -30,7 +30,20 @@ void ysJob::generateUniqueID()
 
 bool ysJob::readTaskFile(QString filename)
 {
-    // TODO
+    taskFile=filename;
+
+    YS_OUT("Now processing file " + taskFile);
 
     return true;
+}
+
+
+QStringList ysJob::getAllFiles()
+{
+    QStringList allFiles;
+
+    // TODO
+    allFiles.clear();
+
+    return allFiles;
 }
