@@ -42,8 +42,13 @@ QStringList ysJob::getAllFiles()
 {
     QStringList allFiles;
 
-    // TODO
     allFiles.clear();
+    allFiles.append(taskFile);
+    if (scanFile!="")
+    {
+        allFiles.append(scanFile);
+    }
+    allFiles.append(adjustmentFiles);
 
     return allFiles;
 }

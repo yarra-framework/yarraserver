@@ -120,11 +120,11 @@ bool ysServer::runLoop()
 
                 // Delete all temporary files
                 queue.cleanWorkPath();
-                queue.cleanStoragePath();
 
                 // Discard the current job
                 YS_FREE(currentJob);
 
+                YS_OUT("Job finished.");
             }
         }
 

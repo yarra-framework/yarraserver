@@ -13,15 +13,12 @@ public:
     bool prepare();
 
     bool isTaskAvailable();
-
     ysJob* fetchTask();
-
-    bool cleanWorkPath();
-    bool cleanStoragePath();
 
     bool moveTaskToWorkPath(ysJob* job);
     bool moveTaskToFailPath(ysJob* job);
     bool moveTaskToStoragePath(ysJob* job);
+    bool cleanWorkPath();
 
 protected:
 

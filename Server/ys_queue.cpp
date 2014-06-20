@@ -99,23 +99,38 @@ bool ysQueue::isTaskFileLocked(QString taskFile)
 
 bool ysQueue::cleanWorkPath()
 {
-    // TODO
+    QDir workDir(YSRA->staticConfig.workPath);
+
+    QStringList filesToDelete=workDir.entryList(QDir::Files);
+    for (int i=0; i<filesToDelete.count(); i++)
+    {
+        if (!workDir.remove(filesToDelete.at(i)))
+        {
+            // TODO: Error handling
+        }
+    }
+
+    QStringList directoriesToDelete=workDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    for (int i=0; i<directoriesToDelete.count(); i++)
+    {
+        if (!workDir.rmdir(directoriesToDelete.at(i)))
+        {
+            // TODO: Error handling
+        }
+    }
 
     return true;
 }
 
-
-bool ysQueue::cleanStoragePath()
-{
-    // TODO
-
-    return true;
-}
 
 
 bool ysQueue::moveTaskToWorkPath(ysJob* job)
 {
-    // TODO
+    if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.inqueuePath, YSRA->staticConfig.workPath))
+    {
+        // TODO
+        return false;
+    }
 
     return true;
 }
@@ -123,7 +138,11 @@ bool ysQueue::moveTaskToWorkPath(ysJob* job)
 
 bool ysQueue::moveTaskToFailPath(ysJob* job)
 {
-    // TODO
+    if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.workPath, YSRA->staticConfig.failPath))
+    {
+        // TODO
+        return false;
+    }
 
     return true;
 }
@@ -134,7 +153,11 @@ bool ysQueue::moveTaskToStoragePath(ysJob* job)
     /* TODO: Check if storing the raw data is desired
     if (job->)
     {
-        // TODO
+        if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.workPath, YSRA->staticConfig.storagePath))
+        {
+            // TODO
+            return false;
+        }
     }
     */
 
@@ -142,11 +165,23 @@ bool ysQueue::moveTaskToStoragePath(ysJob* job)
 }
 
 
-bool moveFiles(QStringList files, QString sourcePath, QString targetPath)
+bool ysQueue::moveFiles(QStringList files, QString sourcePath, QString targetPath)
 {
-    // TODO
+    bool copyError=false;
 
-    return true;
+    for (int i=0; i<files.count(); i++)
+    {
+        QString sourceFile=sourcePath+"/"+files.at(i);
+        QString targetFile=targetPath+"/"+files.at(i);
+        if (!QFile::rename(sourceFile, targetFile))
+        {
+            // TODO: Error handling
+            copyError=true;
+        }
+
+    }
+
+    return copyError;
 }
 
 
