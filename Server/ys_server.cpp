@@ -1,5 +1,6 @@
 #include "ys_server.h"
 #include "ys_global.h"
+#include "ys_log.h"
 
 
 
@@ -39,9 +40,8 @@ void ysServer::aboutToQuitApp()
 bool ysServer::prepare()
 {
     YS_OUT("Yarra Server - Version " + QString(YS_VERSION));
-    YS_OUT("================================");
+    YS_OUT("===========================");
     YS_OUT("");
-    YS_OUT("Initializing server...\n");
 
     if (!staticConfig.readConfiguration())
     {
@@ -51,18 +51,23 @@ bool ysServer::prepare()
         return false;
     }
 
+    // Start the system log
+    log.openSysLog();
+
+    YS_SYSLOG_OUT("Initializing server...");
+
     if (!dynamicConfig.validateAllReconModes())
     {
-        YS_OUT("ERROR: Some reconstruction modes have not been configured correctly.");
-        YS_OUT("Please check configuration. Shutting down.");
+        YS_SYSLOG_OUT("ERROR: Some reconstruction modes have not been configured correctly.");
+        YS_SYSLOG_OUT("Please check configuration. Shutting down.");
 
         return false;
     }
 
     if (!queue.prepare())
     {
-        YS_OUT("ERROR: Preparing queing directories failed.");
-        YS_OUT("Please check installation and permissions. Shutting down.");
+        YS_SYSLOG_OUT("ERROR: Preparing queing directories failed.");
+        YS_SYSLOG_OUT("Please check installation and permissions. Shutting down.");
 
         return false;
     }
@@ -79,8 +84,8 @@ bool ysServer::runLoop()
     // Check if controlInterface setup was successful
     if (!controlInterface.prepare())
     {
-        YS_OUT("Initialization of the server not successful.");
-        YS_OUT("Is the server already running?");
+        YS_SYSLOG_OUT("Initialization of the server not successful.");
+        YS_SYSLOG_OUT("Is the server already running?");
         YS_OUT("");
         YS_OUT("If the server is not running, this behavior might result from a previous crash.");
         YS_OUT("Start the server with parameter --force to enforce a restart.");
@@ -124,7 +129,7 @@ bool ysServer::runLoop()
                 // Discard the current job
                 YS_FREE(currentJob);
 
-                YS_OUT("Job finished.");
+                YS_SYSLOG_OUT("Job finished.");
             }
         }
 
@@ -134,7 +139,7 @@ bool ysServer::runLoop()
 
     controlInterface.finish();
 
-    YS_OUT("Server stopped.");
+    YS_SYSLOG_OUT("Server stopped.");
 
     return true;
 }

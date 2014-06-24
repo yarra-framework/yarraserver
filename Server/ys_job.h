@@ -8,6 +8,7 @@ class ysJob
 {
 public:
     ysJob();
+    ~ysJob();
 
     QString     taskFile;
     QString     scanFile;
@@ -19,15 +20,19 @@ public:
     QString protocolName;
 
     QString reconMode;
+    QString reconReadableName;
     QString systemName;
 
     QDateTime submissionTime;
     QDateTime processingStart;
     QDateTime processingEnd;
 
+    qint64 submittedScanFileSize;
+
     QString uniqueID;
 
     QString reconCallCmd;
+    bool    storeProcessedFile;
 
     bool readTaskFile(QString filename);
 

@@ -20,8 +20,6 @@ ysStaticConfig::ysStaticConfig()
     serverType="Unspecified";
 
     errorNotificationMail="";
-
-    YS_OUT("Path is " + logPath);
 }
 
 

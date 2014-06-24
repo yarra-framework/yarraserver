@@ -14,7 +14,7 @@ bool ysQueue::prepare()
 {
     if (!queueDir.cd(YSRA->staticConfig.inqueuePath))
     {
-        YS_OUT("ERROR: Unable to change to queue directory.");
+        YS_SYSLOG_OUT("ERROR: Unable to change to queue directory.");
         return false;
     }
 
@@ -76,9 +76,12 @@ ysJob* ysQueue::fetchTask()
 
     ysJob* newJob=new ysJob;
 
+    YS_SYSLOG_OUT("Starting processing task " + taskFilename);
+
     if(!newJob->readTaskFile(taskFilename))
     {
         // Reading task file was not successful
+        YS_SYSLOG_OUT("Job creation not successful.");
     }
 
     return newJob;
@@ -128,7 +131,7 @@ bool ysQueue::moveTaskToWorkPath(ysJob* job)
 {
     if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.inqueuePath, YSRA->staticConfig.workPath))
     {
-        // TODO
+        // TODO: Error handling
         return false;
     }
 
@@ -140,7 +143,7 @@ bool ysQueue::moveTaskToFailPath(ysJob* job)
 {
     if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.workPath, YSRA->staticConfig.failPath))
     {
-        // TODO
+        // TODO: Error handling
         return false;
     }
 
@@ -150,16 +153,15 @@ bool ysQueue::moveTaskToFailPath(ysJob* job)
 
 bool ysQueue::moveTaskToStoragePath(ysJob* job)
 {
-    /* TODO: Check if storing the raw data is desired
-    if (job->)
+    // Check if storing the raw data is desired
+    if (job->storeProcessedFile)
     {
         if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.workPath, YSRA->staticConfig.storagePath))
         {
-            // TODO
+            // TODO: Error handling
             return false;
         }
     }
-    */
 
     return true;
 }
