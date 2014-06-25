@@ -35,7 +35,9 @@ ysJob::~ysJob()
 
 void ysJob::generateUniqueID()
 {
-    // TODO
+    // TODO: Find improved way for generating uniqueID for task. For now, it's the filename.
+    uniqueID=taskFile;
+    uniqueID.truncate(uniqueID.indexOf("."));
 }
 
 
@@ -59,8 +61,9 @@ bool ysJob::readTaskFile(QString filename)
 
     submittedScanFileSize=taskSettings.value("Information/ScanFileSize", 0).toLongLong();
 
-    submissionTime.setDate(taskSettings.value("Information/TaskDate", QDate::currentDate()).toDate());
-    submissionTime.setTime(taskSettings.value("Information/TaskTime", QTime::currentTime()).toTime());
+    QDate submDate=QDate::fromString(taskSettings.value("Information/TaskDate", QDate::currentDate().toString()).toString());
+    QTime submTime=QTime::fromString(taskSettings.value("Information/TaskTime", QTime::currentTime().toString()).toString());
+    submissionTime=QDateTime(submDate,submTime);
 
     adjustmentFiles.clear();
     int adjustCount=taskSettings.value("Task/AdjustmentFilesCount", 0).toInt();
@@ -88,7 +91,6 @@ bool ysJob::readTaskFile(QString filename)
 
     if (fileMissing)
     {
-        // TODO: Error handling!
         YS_SYSLOG_OUT("ERROR: The submitted task is missing input files.");
         YS_SYSLOG_OUT("ERROR: Task will not be processed and moved to fail directory.");
         return false;
@@ -97,17 +99,50 @@ bool ysJob::readTaskFile(QString filename)
     // TODO: Check if the reconstruction mode is valid.
 
 
-    // TODO: Find improved way for generating uniqueID for task. For now, it's the filename.
-    uniqueID=taskFile;
-    uniqueID.truncate(uniqueID.indexOf("."));
+    // Create ID that is used for the log file and mail notifications
+    generateUniqueID();
 
     // Now that it is likely that the file can be processed, create a task specific log
     YSRA->log.openTaskLog(uniqueID);
 
-    // TODO: Dump some job information into the job file
+    // Dump some job information into the job file
+    logJobInformation();
+
+    // Remember when the job was started
+    processingStart=QDateTime::currentDateTime();
 
     return true;
 }
+
+
+void ysJob::logJobInformation()
+{
+    YS_TASKLOG("Task information");
+    YS_TASKLOG("----------------");
+
+    YS_TASKLOG("ReconMode:    " + reconMode + " ("+ reconReadableName +")");
+    YS_TASKLOG("Patient:      " + patientName);
+    YS_TASKLOG("ACC:          " + accNumber);
+    YS_TASKLOG("Protocol:     " + protocolName);
+    YS_TASKLOG("System:       " + systemName);
+    YS_TASKLOG("Submission:   " + submissionTime.toString());
+    YS_TASKLOG("Notification: " + emailNotification);
+
+    QString adjFileList="none";
+
+    if (adjustmentFiles.count()>0)
+    {
+        adjFileList="";
+        for (int i=0; i<adjustmentFiles.count(); i++)
+        {
+            adjFileList += adjustmentFiles.at(i)+" ";
+        }
+    }
+
+    YS_TASKLOG("Adjustments:  " + adjFileList);
+    YS_TASKLOG("");
+}
+
 
 
 QStringList ysJob::getAllFiles()

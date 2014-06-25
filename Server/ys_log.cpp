@@ -58,12 +58,32 @@ void ysLog::closeSysLog()
 
 void ysLog::openTaskLog(QString suggestedName)
 {
+    QString logFilename=YSRA->staticConfig.logPath+"/"+suggestedName;
 
+    taskLogFile.setFileName(logFilename + ".log");
+
+    // If the log file already exists from a previous reconstruction, add the current date and time
+    // (including ms to make it unique)
+    if (taskLogFile.exists())
+    {
+        logFilename += "_" + QDate::currentDate().toString("ddMMyy")+QTime::currentTime().toString("HHmmsszzz");
+    }
+
+    taskLogFilename=logFilename+ ".log";
+
+    taskLogFile.setFileName(taskLogFilename);
+    taskLogFile.open(QIODevice::Append | QIODevice::Text);
+    taskLog("#######################################[START]#");
 }
 
 
 void ysLog::closeTaskLog()
 {
+    if (taskLogFile.isOpen())
+    {
+        taskLog("Closing session.");
+        taskLog("#########################################[END]#\n");
+    }
     taskLogFile.close();
 }
 

@@ -10,7 +10,7 @@
 #include "ys_job.h"
 #include "ys_process.h"
 #include "ys_queue.h"
-
+#include "ys_statistics.h"
 
 
 class ysServer: public QObject
@@ -41,6 +41,7 @@ public:
     ysLog              log;
     ysStaticConfig     staticConfig;
     ysDynamicConfig    dynamicConfig;
+    ysStatistics       statistics;
     ysControlInterface controlInterface;
     ysQueue            queue;
     ysProcess          processor;

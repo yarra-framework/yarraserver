@@ -22,7 +22,7 @@ bool ysQueue::prepare()
     taskFilter <<  QString("*")+QString(YS_TASK_EXTENSION);
     queueDir.setNameFilters(taskFilter);
     queueDir.setFilter(QDir::Files);
-    queueDir.setSorting(QDir::Time);
+    queueDir.setSorting(QDir::Time | QDir::Reversed);
 
     return true;
 }

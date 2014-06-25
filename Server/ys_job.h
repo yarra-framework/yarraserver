@@ -41,6 +41,7 @@ public:
 
 protected:
     void generateUniqueID();
+    void logJobInformation();
 
 
 };
