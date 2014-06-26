@@ -77,6 +77,8 @@ bool ysJob::readTaskFile(QString filename)
         }
     }
 
+    // Create ID that is used for the log file and mail notifications
+    generateUniqueID();
 
     QDir queue(queueDir);
     bool fileMissing=false;
@@ -106,10 +108,6 @@ bool ysJob::readTaskFile(QString filename)
         YS_SYSLOG_OUT("ERROR: Cannot process the task. Moving task to fail directory.");
         return false;
     }
-
-
-    // Create ID that is used for the log file and mail notifications
-    generateUniqueID();
 
     // Now that it is likely that the file can be processed, create a task specific log
     YSRA->log.openTaskLog(uniqueID);

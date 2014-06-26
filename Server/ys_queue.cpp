@@ -144,15 +144,40 @@ bool ysQueue::moveTaskToWorkPath(ysJob* job)
 
 bool ysQueue::moveTaskToFailPath(ysJob* job, bool filesInQueue)
 {
+    // Determine where the source files are located (depending on during which stage of the
+    // processing the function was called)
     QString sourcePath=YSRA->staticConfig.workPath;
     if (filesInQueue)
     {
         sourcePath=YSRA->staticConfig.inqueuePath;
     }
 
-    // TODO: Create own subdir in fail path. Check for existance and recreate with timestamp if exists.
+    // Create own subdir in fail path. Check for existance and recreate with timestamp if exists.
+    QDir failDir(YSRA->staticConfig.failPath);
+    QString taskID=job->uniqueID;
 
-    if (!moveFiles(job->getAllFiles(), sourcePath, YSRA->staticConfig.failPath))
+    // Check if subfolder with same task already exists. If so, add unique time stamp
+    if (failDir.exists(taskID))
+    {
+        taskID+= "_" + QDate::currentDate().toString("ddMMyy")+QTime::currentTime().toString("HHmmsszzz");
+    }
+
+    QString failSubdir=YSRA->staticConfig.failPath + "/" + taskID;
+
+    // Try to create a subfolder for the failed task
+    if (!failDir.mkdir(taskID))
+    {
+        // Subfolder creation not successful, push files to base path
+        failSubdir=YSRA->staticConfig.failPath;
+        YS_SYSLOG_OUT("ERROR: Unable to create directory in fail path. Storing files directly in fail path.");
+    }
+    else
+    {
+        YS_SYSLOG("Moving all task files into fail directory " + failSubdir);
+    }
+
+    // Now copy files
+    if (!moveFiles(job->getAllFiles(), sourcePath, failSubdir))
     {
         YS_SYSLOG_OUT("ERROR: Unable to move files to fail directory.");
         return false;
@@ -167,11 +192,34 @@ bool ysQueue::moveTaskToStoragePath(ysJob* job)
     // Check if storing the raw data is desired
     if (job->storeProcessedFile)
     {
-        // TODO: Create own subdir in fail path. Check for existance and recreate with timestamp if exists.
+        // Create own subdir in storage path. Check for existance and recreate with timestamp if exists.
+        QDir storageDir(YSRA->staticConfig.storagePath);
+        QString taskID=job->uniqueID;
 
-        if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.workPath, YSRA->staticConfig.storagePath))
+        // Check if subfolder with same task already exists. If so, add unique time stamp
+        if (storageDir.exists(taskID))
         {
-            YS_SYSLOG_OUT("ERROR: Unable to move files to storage directory.");
+            taskID+= "_" + QDate::currentDate().toString("ddMMyy")+QTime::currentTime().toString("HHmmsszzz");
+        }
+
+        QString storageSubdir=YSRA->staticConfig.storagePath + "/" + taskID;
+
+        // Try to create a subfolder for the failed task
+        if (!storageDir.mkdir(taskID))
+        {
+            // Subfolder creation not successful, push files to base path
+            storageSubdir=YSRA->staticConfig.storagePath;
+            YS_SYSTASKLOG_OUT("ERROR: Unable to create directory in fail path. Storing files directly in fail path.");
+        }
+        else
+        {
+            YS_TASKLOG("Moving all task files into fail directory " + storageSubdir);
+        }
+
+
+        if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.workPath, storageSubdir))
+        {
+            YS_SYSTASKLOG_OUT("ERROR: Unable to move files to storage directory.");
             return false;
         }
     }
