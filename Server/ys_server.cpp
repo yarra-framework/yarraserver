@@ -53,8 +53,14 @@ bool ysServer::prepare()
 
     // Start the system log
     log.openSysLog();
-
     YS_SYSLOG_OUT("Initializing server...");
+
+    // Prepare the dynamic configuration
+    if (!dynamicConfig.prepare())
+    {
+        YS_SYSLOG_OUT("Cannot launch server. Shutting down.");
+        return false;
+    }
 
     if (!dynamicConfig.validateAllReconModes())
     {

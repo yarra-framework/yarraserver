@@ -81,6 +81,11 @@ ysJob* ysQueue::fetchTask()
     if(!newJob->readTaskFile(taskFilename))
     {
         // Reading task file was not successful
+        moveTaskToFailPath(newJob, true);
+
+        delete newJob;
+        newJob=0; // It's important to return a null pointer!
+
         YS_SYSLOG_OUT("Job creation not successful.");
     }
 
@@ -94,9 +99,7 @@ bool ysQueue::isTaskFileLocked(QString taskFile)
     lockFilename.truncate(lockFilename.indexOf("."));
     lockFilename+=YS_LOCK_EXTENSION;
 
-    QLockFile lockFile(YSRA->staticConfig.inqueuePath + "/" + lockFilename);
-
-    return lockFile.isLocked();
+    return QFile::exists(YSRA->staticConfig.inqueuePath + "/" + lockFilename);
 }
 
 
@@ -131,7 +134,7 @@ bool ysQueue::moveTaskToWorkPath(ysJob* job)
 {
     if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.inqueuePath, YSRA->staticConfig.workPath))
     {
-        // TODO: Error handling
+        YS_SYSLOG_OUT("ERROR: Unable to move files to work directory.");
         return false;
     }
 
@@ -139,11 +142,19 @@ bool ysQueue::moveTaskToWorkPath(ysJob* job)
 }
 
 
-bool ysQueue::moveTaskToFailPath(ysJob* job)
+bool ysQueue::moveTaskToFailPath(ysJob* job, bool filesInQueue)
 {
-    if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.workPath, YSRA->staticConfig.failPath))
+    QString sourcePath=YSRA->staticConfig.workPath;
+    if (filesInQueue)
     {
-        // TODO: Error handling
+        sourcePath=YSRA->staticConfig.inqueuePath;
+    }
+
+    // TODO: Create own subdir in fail path. Check for existance and recreate with timestamp if exists.
+
+    if (!moveFiles(job->getAllFiles(), sourcePath, YSRA->staticConfig.failPath))
+    {
+        YS_SYSLOG_OUT("ERROR: Unable to move files to fail directory.");
         return false;
     }
 
@@ -156,9 +167,11 @@ bool ysQueue::moveTaskToStoragePath(ysJob* job)
     // Check if storing the raw data is desired
     if (job->storeProcessedFile)
     {
+        // TODO: Create own subdir in fail path. Check for existance and recreate with timestamp if exists.
+
         if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.workPath, YSRA->staticConfig.storagePath))
         {
-            // TODO: Error handling
+            YS_SYSLOG_OUT("ERROR: Unable to move files to storage directory.");
             return false;
         }
     }
@@ -175,15 +188,16 @@ bool ysQueue::moveFiles(QStringList files, QString sourcePath, QString targetPat
     {
         QString sourceFile=sourcePath+"/"+files.at(i);
         QString targetFile=targetPath+"/"+files.at(i);
+
         if (!QFile::rename(sourceFile, targetFile))
         {
-            // TODO: Error handling
+            YS_SYSLOG("ERROR: Error performing copy " + sourceFile + " to " + targetFile);
             copyError=true;
         }
 
     }
 
-    return copyError;
+    return !copyError;
 }
 
 

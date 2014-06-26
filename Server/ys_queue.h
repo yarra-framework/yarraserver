@@ -16,7 +16,7 @@ public:
     ysJob* fetchTask();
 
     bool moveTaskToWorkPath(ysJob* job);
-    bool moveTaskToFailPath(ysJob* job);
+    bool moveTaskToFailPath(ysJob* job, bool filesInQueue=false);
     bool moveTaskToStoragePath(ysJob* job);
     bool cleanWorkPath();
 

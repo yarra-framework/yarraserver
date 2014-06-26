@@ -47,35 +47,38 @@ bool ysJob::readTaskFile(QString filename)
 
     QString queueDir=YSRA->staticConfig.inqueuePath;
 
-    QSettings taskSettings(queueDir+"/"+taskFile, QSettings::IniFormat);
-
-    scanFile=taskSettings.value("Task/ScanFile", "").toString();
-    reconMode=taskSettings.value("Task/ReconMode", "").toString();
-    accNumber=taskSettings.value("Task/ACC", "").toString();
-    emailNotification=taskSettings.value("Task/EMailNotification", "").toString();
-
-    patientName=taskSettings.value("Task/PatientName", "Unknown").toString();
-    protocolName=taskSettings.value("Task/ScanProtocol", "Unknown").toString();
-    reconReadableName=taskSettings.value("Task/ReconName", "Unknown").toString();
-    systemName=taskSettings.value("Information/SystemName", "Unknown").toString();
-
-    submittedScanFileSize=taskSettings.value("Information/ScanFileSize", 0).toLongLong();
-
-    QDate submDate=QDate::fromString(taskSettings.value("Information/TaskDate", QDate::currentDate().toString()).toString());
-    QTime submTime=QTime::fromString(taskSettings.value("Information/TaskTime", QTime::currentTime().toString()).toString());
-    submissionTime=QDateTime(submDate,submTime);
-
-    adjustmentFiles.clear();
-    int adjustCount=taskSettings.value("Task/AdjustmentFilesCount", 0).toInt();
-
-    for (int i=0; i<adjustCount; i++)
+    // Scoping for lifetime of QSettings object, as the file might be moved later
     {
-        QString adjustFile=reconReadableName=taskSettings.value("AdjustmentFiles/"+QString(i), "").toString();
-        adjustmentFiles.append(adjustFile);
+        QSettings taskSettings(queueDir+"/"+taskFile, QSettings::IniFormat);
+
+        scanFile=taskSettings.value("Task/ScanFile", "!!FAIL").toString();
+        reconMode=taskSettings.value("Task/ReconMode", "!!FAIL").toString();
+        accNumber=taskSettings.value("Task/ACC", "").toString();
+        emailNotification=taskSettings.value("Task/EMailNotification", "").toString();
+
+        patientName=taskSettings.value("Task/PatientName", "Unknown").toString();
+        protocolName=taskSettings.value("Task/ScanProtocol", "Unknown").toString();
+        reconReadableName=taskSettings.value("Task/ReconName", "Unknown").toString();
+        systemName=taskSettings.value("Information/SystemName", "Unknown").toString();
+
+        submittedScanFileSize=taskSettings.value("Information/ScanFileSize", 0).toLongLong();
+
+        QDate submDate=QDate::fromString(taskSettings.value("Information/TaskDate", QDate::currentDate().toString()).toString());
+        QTime submTime=QTime::fromString(taskSettings.value("Information/TaskTime", QTime::currentTime().toString()).toString());
+        submissionTime=QDateTime(submDate,submTime);
+
+        adjustmentFiles.clear();
+        int adjustCount=taskSettings.value("Task/AdjustmentFilesCount", 0).toInt();
+
+        for (int i=0; i<adjustCount; i++)
+        {
+            QString adjustFile=taskSettings.value("AdjustmentFiles/"+QString(i), "").toString();
+            adjustmentFiles.append(adjustFile);
+        }
     }
 
-    QDir queue(queueDir);
 
+    QDir queue(queueDir);
     bool fileMissing=false;
 
     // Check if all files are there
@@ -96,7 +99,13 @@ bool ysJob::readTaskFile(QString filename)
         return false;
     }
 
-    // TODO: Check if the reconstruction mode is valid.
+    // Check if the reconstruction mode is valid
+    if (!YSRA->dynamicConfig.isReconModeAvailable(reconMode))
+    {
+        YS_SYSLOG_OUT("ERROR: The requested reconstruction mode is not available on this server.");
+        YS_SYSLOG_OUT("ERROR: Cannot process the task. Moving task to fail directory.");
+        return false;
+    }
 
 
     // Create ID that is used for the log file and mail notifications

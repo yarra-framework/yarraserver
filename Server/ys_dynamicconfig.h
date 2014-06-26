@@ -8,12 +8,17 @@ class ysDynamicConfig
 public:
     ysDynamicConfig();
 
+    bool prepare();
+
     void updateDynamicConfigList();
     bool validateAllReconModes();
     bool isReconModeAvailable(QString reconMode);
     bool readDynamicConfig(QString reconMode);
 
 protected:
+
+    QDir modesDir;
+
     QStringList availableReconModes;
 
 };
