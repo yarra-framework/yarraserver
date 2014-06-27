@@ -18,7 +18,10 @@ public:
     bool moveTaskToWorkPath(ysJob* job);
     bool moveTaskToFailPath(ysJob* job, bool filesInQueue=false);
     bool moveTaskToStoragePath(ysJob* job);
+
     bool cleanWorkPath();
+
+    static bool cleanPath(QString path);
 
 protected:
 

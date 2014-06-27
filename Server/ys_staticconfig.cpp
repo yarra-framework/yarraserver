@@ -20,6 +20,8 @@ ysStaticConfig::ysStaticConfig()
     serverType="Unspecified";
 
     errorNotificationMail="";
+
+    mailNotificationEnabled=false;
 }
 
 

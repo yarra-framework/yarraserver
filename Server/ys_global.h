@@ -17,6 +17,11 @@
 #define YS_LOCK_EXTENSION      ".lock"
 #define YS_LOG_SERVER          "yarra.log"
 
+#define YS_WORKDIR_TMP         "temp"
+#define YS_WORKDIR_RECON       "recon"
+#define YS_WORKDIR_POSTPROC    "postproc"
+
+
 #define YS_FREE(x) if (x!=0) { delete x; x=0; }
 #define YS_FREEARR(x) if (x!=0) { delete[] x; x=0; }
 

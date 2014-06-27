@@ -105,28 +105,48 @@ bool ysQueue::isTaskFileLocked(QString taskFile)
 
 bool ysQueue::cleanWorkPath()
 {
-    QDir workDir(YSRA->staticConfig.workPath);
+    bool deleteSuccess=cleanPath(YSRA->staticConfig.workPath);
 
-    QStringList filesToDelete=workDir.entryList(QDir::Files);
+    if (!deleteSuccess)
+    {
+        // Error handling
+        YS_SYSLOG_OUT("ERROR: Some temporary files or folders in the work directory could not be removed.");
+        YS_SYSLOG_OUT("ERROR: This might interfere with the following reconstruction task.");
+    }
+
+
+    return deleteSuccess;
+}
+
+
+bool ysQueue::cleanPath(QString path)
+{
+    bool deleteError=false;
+    QDir deleteDir(path);
+
+    // First remove all files
+    QStringList filesToDelete=deleteDir.entryList(QDir::Files);
     for (int i=0; i<filesToDelete.count(); i++)
     {
-        if (!workDir.remove(filesToDelete.at(i)))
+        if (!deleteDir.remove(filesToDelete.at(i)))
         {
-            // TODO: Error handling
+            deleteError=true;
         }
     }
 
-    QStringList directoriesToDelete=workDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    QStringList directoriesToDelete=deleteDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     for (int i=0; i<directoriesToDelete.count(); i++)
     {
-        if (!workDir.rmdir(directoriesToDelete.at(i)))
+        QDir subDir(path+"/"+directoriesToDelete.at(i));
+        if (!subDir.removeRecursively())
         {
-            // TODO: Error handling
+            deleteError=true;
         }
     }
 
-    return true;
+    return !deleteError;
 }
+
 
 
 

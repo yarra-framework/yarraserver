@@ -21,6 +21,8 @@ public:
 
     QString errorNotificationMail;
 
+    bool mailNotificationEnabled;
+
     bool readConfiguration();
 
 };

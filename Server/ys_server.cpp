@@ -118,13 +118,17 @@ bool ysServer::runLoop()
             {
                 // ## TODO: Integrate error handling!!!
 
+                // Delete all temporary files
+                queue.cleanWorkPath();
+
                 // Move all related files to work directory
                 queue.moveTaskToWorkPath(currentJob);
 
                 // Run the process
+                processor.prepareOutputDirs();
                 processor.runReconstruction(currentJob);
                 processor.runPostProcessing(currentJob);
-                processor.runStorage(currentJob);
+                processor.runTransfer      (currentJob);
 
                 // If requested by mode, move raw data to storage location
                 queue.moveTaskToStoragePath(currentJob);

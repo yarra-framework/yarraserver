@@ -11,7 +11,16 @@ public:
 
     bool runReconstruction(ysJob* job);
     bool runPostProcessing(ysJob* job);
-    bool runStorage(ysJob* job);
+    bool runTransfer(ysJob* job);
+
+    bool prepareOutputDirs();
+    bool cleanTmpDir();
+
+
+    QString reconDir;
+    QString transferDir;
+    QString tmpDir;
+
 
 };
 
