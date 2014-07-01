@@ -42,7 +42,6 @@ bool ysQueue::isTaskAvailable()
 
 ysJob* ysQueue::fetchTask()
 {
-    bool invalidJob=false;
     QString taskFilename="";
 
     queueDir.refresh();
@@ -86,7 +85,8 @@ ysJob* ysQueue::fetchTask()
         delete newJob;
         newJob=0; // It's important to return a null pointer!
 
-        YS_SYSLOG_OUT("Job creation not successful.");
+        YS_SYSLOG_OUT("Job creation not successful.\n");
+        YS_SYSLOG_OUT(YS_WAITMESSAGE);
     }
 
     return newJob;
@@ -152,6 +152,8 @@ bool ysQueue::cleanPath(QString path)
 
 bool ysQueue::moveTaskToWorkPath(ysJob* job)
 {
+    YS_SYSLOG("Moving all task file to work directory.");
+
     if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.inqueuePath, YSRA->staticConfig.workPath))
     {
         YS_SYSLOG_OUT("ERROR: Unable to move files to work directory.");
@@ -229,11 +231,11 @@ bool ysQueue::moveTaskToStoragePath(ysJob* job)
         {
             // Subfolder creation not successful, push files to base path
             storageSubdir=YSRA->staticConfig.storagePath;
-            YS_SYSTASKLOG_OUT("ERROR: Unable to create directory in fail path. Storing files directly in fail path.");
+            YS_SYSTASKLOG_OUT("ERROR: Unable to create directory in storage path. Storing files directly in storage path.");
         }
         else
         {
-            YS_TASKLOG("Moving all task files into fail directory " + storageSubdir);
+            YS_TASKLOG("Moving all task files into storage directory " + storageSubdir);
         }
 
 

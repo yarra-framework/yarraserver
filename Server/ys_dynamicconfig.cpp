@@ -70,11 +70,3 @@ bool ysDynamicConfig::isReconModeAvailable(QString reconMode)
 }
 
 
-bool ysDynamicConfig::readDynamicConfig(QString reconMode)
-{
-    // TODO
-
-    return true;
-}
-
-

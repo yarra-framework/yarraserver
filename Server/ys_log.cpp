@@ -41,7 +41,9 @@ void ysLog::openSysLog()
         sysLogFile.open(QIODevice::Append | QIODevice::Text);
     }
 
-    sysLog("#######################################[START]#");
+    sysLog("##[START]######################################");
+    sysLog("YarraServer Version " + QString(YS_VERSION));
+    sysLog("Name: " + YSRA->staticConfig.serverName + ", Type: " + YSRA->staticConfig.serverType);
 }
 
 
@@ -50,7 +52,8 @@ void ysLog::closeSysLog()
     if (sysLogFile.isOpen())
     {
         sysLog("Closing session.");
-        sysLog("#########################################[END]#\n");
+        sysLog("##[END]########################################");
+        sysLog("");
     }
     sysLogFile.close();
 }
@@ -73,7 +76,11 @@ void ysLog::openTaskLog(QString suggestedName)
 
     taskLogFile.setFileName(taskLogFilename);
     taskLogFile.open(QIODevice::Append | QIODevice::Text);
-    taskLog("#######################################[START]#");
+    taskLog("##[TASK START]####################################");
+    taskLog("");
+    taskLog("YarraServer Vesion " + QString(YS_VERSION));
+    taskLog("Name: " + YSRA->staticConfig.serverName + ", Type: " + YSRA->staticConfig.serverType);
+    taskLog("");
 }
 
 
@@ -82,7 +89,7 @@ void ysLog::closeTaskLog()
     if (taskLogFile.isOpen())
     {
         taskLog("Closing session.");
-        taskLog("#########################################[END]#\n");
+        taskLog("##[TASK END]######################################\n");
     }
     taskLogFile.close();
 }
@@ -90,7 +97,12 @@ void ysLog::closeTaskLog()
 
 void ysLog::sysLog(QString message, bool screenOutput)
 {
-    QString line=QDateTime::currentDateTime().toString("dd.MM.yy hh:mm:ss") + "  --  " + message + "\n";
+    QString line="\n";
+    if (message.length()>0)
+    {
+        line=QDateTime::currentDateTime().toString("dd.MM.yy hh:mm:ss") + "  --  " + message + "\n";
+    }
+
     sysLogFile.write(line.toLatin1());
     sysLogFile.flush();
 
@@ -103,7 +115,12 @@ void ysLog::sysLog(QString message, bool screenOutput)
 
 void ysLog::taskLog(QString message, bool screenOutput)
 {
-    QString line=QDateTime::currentDateTime().toString("dd.MM.yy hh:mm:ss") + "  --  " + message + "\n";
+    QString line="\n";
+    if (message.length()>0)
+    {
+        line=QDateTime::currentDateTime().toString("dd.MM.yy hh:mm:ss") + "  --  " + message + "\n";
+    }
+
     taskLogFile.write(line.toLatin1());
     taskLogFile.flush();
 
@@ -113,3 +130,10 @@ void ysLog::taskLog(QString message, bool screenOutput)
     }
 }
 
+
+void ysLog::taskLogProc(QString message)
+{
+    QString line=QDateTime::currentDateTime().toString("dd.MM.yy hh:mm:ss") + "  --  " + message;
+    taskLogFile.write(line.toLatin1());
+    taskLogFile.flush();
+}

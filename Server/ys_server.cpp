@@ -36,11 +36,10 @@ void ysServer::aboutToQuitApp()
 }
 
 
-
 bool ysServer::prepare()
 {
-    YS_OUT("Yarra Server - Version " + QString(YS_VERSION));
-    YS_OUT("===========================");
+    YS_OUT("YarraServer - Version " + QString(YS_VERSION));
+    YS_OUT("==========================");
     YS_OUT("");
 
     if (!staticConfig.readConfiguration())
@@ -101,7 +100,8 @@ bool ysServer::runLoop()
 
 
     YS_OUT("Server running (threadID " + QString::number((long)this->thread()->currentThreadId()) + ")");
-
+    YS_SYSLOG_OUT("");
+    YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
     while (!shutdownRequested)
     {
@@ -117,6 +117,7 @@ bool ysServer::runLoop()
             if (currentJob)
             {
                 // ## TODO: Integrate error handling!!!
+                bool procError=false;
 
                 // Delete all temporary files
                 queue.cleanWorkPath();
@@ -124,23 +125,82 @@ bool ysServer::runLoop()
                 // Move all related files to work directory
                 queue.moveTaskToWorkPath(currentJob);
 
-                // Run the process
-                processor.prepareOutputDirs();
-                processor.runReconstruction(currentJob);
-                processor.runPostProcessing(currentJob);
-                processor.runTransfer      (currentJob);
+                // ## Run the individual processing modules
 
-                // If requested by mode, move raw data to storage location
-                queue.moveTaskToStoragePath(currentJob);
+                // 1. Preparation
+                if (!processor.prepareReconstruction(currentJob))
+                {
+                    YS_SYSTASKLOG_OUT("Processing preparation not successful.");
+                    procError=true;
+                }
+
+                if (!procError)
+                {
+                    if (!processor.prepareOutputDirs())
+                    {
+                        YS_SYSTASKLOG_OUT("Preparing working directories not successful.");
+                        procError=true;
+                    }
+                }
+
+                // 2. Reconstruction module
+                if (!procError)
+                {
+                    if (!processor.runReconstruction())
+                    {
+                        YS_SYSTASKLOG_OUT("Running reconstruction module failed.");
+                        procError=true;
+                    }
+                }
+
+                // 3. Postprocessing modules
+                if (!procError)
+                {
+                    if (!processor.runPostProcessing())
+                    {
+                        YS_SYSTASKLOG_OUT("Running post-processing modules failed.");
+                        procError=true;
+                    }
+                }
+
+                // 4. Transfer module
+                if (!procError)
+                {
+                    if (!processor.runTransfer())
+                    {
+                        YS_SYSTASKLOG_OUT("Running transfer module failed.");
+                        procError=true;
+                    }
+                }
+
+                // 5. Clean up
+                processor.finish();
+
+                if (procError)
+                {
+                    YS_SYSTASKLOG("ERROR: Processing of task was not successful.");
+
+                    // If requested by mode, move raw data to storage location
+                    queue.moveTaskToFailPath(currentJob);
+                }
+                else
+                {
+                    YS_SYSTASKLOG("Processing of task was successful.");
+
+                    // If requested by mode, move raw data to storage location
+                    queue.moveTaskToStoragePath(currentJob);
+                }
 
                 // Delete all temporary files
+                YS_TASKLOG("Removing all created files.");
                 queue.cleanWorkPath();
 
                 // Discard the current job
                 YS_FREE(currentJob);
 
-                YS_SYSLOG_OUT("Job finished.");
-            }
+                YS_SYSLOG_OUT("Job has finished.\n");
+                YS_SYSLOG_OUT(YS_WAITMESSAGE);
+            }           
         }
 
         // Sleep for 10ms to prevent excessive CPU usage during idle times

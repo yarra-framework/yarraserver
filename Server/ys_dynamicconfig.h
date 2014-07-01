@@ -13,7 +13,6 @@ public:
     void updateDynamicConfigList();
     bool validateAllReconModes();
     bool isReconModeAvailable(QString reconMode);
-    bool readDynamicConfig(QString reconMode);
 
 protected:
 

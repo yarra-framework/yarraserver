@@ -47,8 +47,6 @@ public:
     ysProcess          processor;
     ysJob*             currentJob;
 
-
-protected:
     bool shutdownRequested;
     bool haltRequested;
 };

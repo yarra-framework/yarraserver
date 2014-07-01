@@ -3,13 +3,20 @@
 
 #include <QtCore>
 
+#include "ys_job.h"
+
+class ysProcess;
 
 class ysMode
 {   
 public:
     ysMode();
 
-    void readModeSettings(QString modeName);
+    void setProcess(ysProcess* process);
+
+    bool readModeSettings(QString modeName, ysJob* job);
+    void parseCmdlines();
+
     QString getFullCmdLine();
 
     QString name;
@@ -18,6 +25,9 @@ public:
     QString reconArguments;
 
     QString parseString(QString input);
+
+    ysProcess* currentProcess;
+    ysJob*     currentJob;
 
 };
 

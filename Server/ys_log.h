@@ -18,6 +18,7 @@ public:
 
     void sysLog(QString message, bool screenOutput=false);
     void taskLog(QString message, bool screenOutput=false);
+    void taskLogProc(QString message);
     void sysTaskLog(QString message);
 
     void sysLogOut(QString message);
