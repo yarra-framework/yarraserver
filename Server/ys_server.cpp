@@ -105,11 +105,11 @@ bool ysServer::runLoop()
 
     while (!shutdownRequested)
     {
-        // Read the current configuration of reconstruction modes
-        dynamicConfig.updateDynamicConfigList();
-
         if (queue.isTaskAvailable())
         {
+            // Read the current configuration of reconstruction modes
+            dynamicConfig.updateDynamicConfigList();
+
             // Ask the queue to fetch the next task to be processed and
             // create a job instance for the task
             currentJob=queue.fetchTask();
