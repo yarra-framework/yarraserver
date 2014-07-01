@@ -203,8 +203,8 @@ bool ysServer::runLoop()
             }           
         }
 
-        // Sleep for 10ms to prevent excessive CPU usage during idle times
-        safeWait(10);
+        // Sleep for 50ms to prevent excessive CPU usage during idle times
+        safeWait(50);
     }
 
     controlInterface.finish();

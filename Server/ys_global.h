@@ -6,7 +6,7 @@
 #include "ys_runtimeaccess.h"
 
 #define YS_VERSION          "0.1a"
-#define YS_SLEEP_INTERVAL   1
+#define YS_SLEEP_INTERVAL   10
 #define YS_CI_ID            "YarraServer"
 #define YS_CI_SETUPTIMOUT   1000
 #define YS_CI_FORCECMD      "--force"

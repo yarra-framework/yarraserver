@@ -19,11 +19,13 @@ public:
     QString serverName;
     QString serverType;
 
-    QString errorNotificationMail;
-
-    bool mailNotificationEnabled;
+    bool    notificationEnabled;
+    QString notificationErrorMail;
+    QString notificationFromAddress;
 
     bool readConfiguration();
+
+    QString execPath;
 
 };
 

@@ -24,15 +24,24 @@ void ysMode::setProcess(ysProcess* process)
 bool ysMode::readModeSettings(QString modeName, ysJob* job)
 {
     name=modeName;
-    QString modeFilename=YSRA->staticConfig.modesPath+"/"+job->reconMode+YS_MODE_EXTENSION;
+    currentJob=job;
 
+    QString modeFilename=YSRA->staticConfig.modesPath+"/"+job->reconMode+YS_MODE_EXTENSION;
     {
+        // Open the mode file
         QSettings modeFile(modeFilename, QSettings::IniFormat);
+
+        // Reconstruction settings
         reconBinary   =modeFile.value("Reconstruction/Bin",  "!!FAIL").toString();
         reconArguments=modeFile.value("Reconstruction/Args", "!!FAIL").toString();
-    }
 
-    currentJob=job;
+        // TODO: Read post proc settings
+
+        // TODO: Read transfer settings
+
+        // Read the additional options from the mode file
+        currentJob->storeProcessedFile=modeFile.value("Options/KeepRawdata", false).toBool();
+    }
 
     return true;
 }
