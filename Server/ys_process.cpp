@@ -43,7 +43,7 @@ bool ysProcess::runReconstruction()
 
     YS_SYSTASKLOG_OUT("Now running reconstruction module...");
 
-    callCmd=mode->getFullCmdLine();
+    callCmd=mode->getReconCmdLine();
     process.setWorkingDirectory(YSRA->staticConfig.workPath);
 
     if (!executeCommand())
@@ -60,27 +60,97 @@ bool ysProcess::runReconstruction()
     YS_TASKLOG("Cleaning temporary files.");
     cleanTmpDir();
 
+    QDir outDir(reconDir);
+    if (outDir.entryList(QDir::Files).count()==0)
+    {
+        YS_SYSTASKLOG_OUT("ERROR: Reconstruction directory contains no files.");
+        reconResult=false;
+    }
+
     return reconResult;
 }
 
 
 bool ysProcess::runPostProcessing()
 {
-    // TODO
+    // Check if there are any postprocessing modules at all
+    if (mode->postprocCount==0)
+    {
+        return true;
+    }
 
-    cleanTmpDir();
+    bool postprocResult=true;
 
-    return true;
+    for (int i=0; i<mode->postprocCount; i++)
+    {
+        YS_SYSTASKLOG_OUT("Now running post processing module " + QString::number(i) + " ...");
+
+        callCmd=mode->getPostprocCmdLine(i);
+        process.setWorkingDirectory(YSRA->staticConfig.workPath);
+
+        if (!executeCommand())
+        {
+            YS_TASKLOG("Post processing failed.");
+            postprocResult=false;
+        }
+        else
+        {
+            YS_TASKLOG("Post processing finished.");
+            postprocResult=true;
+        }
+
+        YS_TASKLOG("Cleaning temporary files.");
+        cleanTmpDir();
+
+        if (!postprocResult)
+        {
+            break;
+        }
+    }
+
+    return postprocResult;
 }
 
 
 bool ysProcess::runTransfer()
 {
-    // TODO
+    // Just return if no transfer module has been defined.
+    if (mode->transferBinary=="")
+    {
+        return true;
+    }
 
+    // Check if there are files to transfer at all
+    QDir outDir(transferDir);
+    if (outDir.entryList(QDir::Files).count()==0)
+    {
+        // Notify about absence of files, but still call transfer module for any case
+        YS_SYSTASKLOG_OUT("WARNING: Transfer directory contains no files.");
+    }
+
+
+    bool transferResult=true;
+
+    YS_SYSTASKLOG_OUT("Now running transfer module...");
+
+    callCmd=mode->getTransferCmdLine();
+    process.setWorkingDirectory(transferDir);
+
+    if (!executeCommand())
+    {
+        YS_TASKLOG("Transfer failed.");
+        transferResult=false;
+    }
+    else
+    {
+        YS_TASKLOG("Transfer finished.");
+        transferResult=true;
+    }
+
+    YS_TASKLOG("Cleaning temporary files.");
     cleanTmpDir();
 
-    return true;
+    return transferResult;
 }
 
 
@@ -96,12 +166,18 @@ bool ysProcess::prepareOutputDirs()
     reconDir=YSRA->staticConfig.workPath + "/" + YS_WORKDIR_RECON;
     tmpDir  =YSRA->staticConfig.workPath + "/" + YS_WORKDIR_TMP;
 
-    // TODO: Prepare the directories for postprocessing
+    transferDir=reconDir;
 
-    // YS_WORKDIR_POSTPROC
+    // Prepare the directories for postprocessing
+    for (int i=0; i<mode->postprocCount; i++)
+    {
+        QString dirName=YS_WORKDIR_POSTPROC+QString::number(i+1);
+        workDir.mkdir(dirName);
+        transferDir=dirName;
+    }
 
-    // TODO: Set transfer directory
-
+    // Set transfer directory
+    YS_TASKLOG("Input directory for transfer is " + transferDir);
 
     // Now, that the directories are known, ask the mode object
     // to parse and finalize the command lines
@@ -124,7 +200,6 @@ bool ysProcess::cleanTmpDir()
 }
 
 
-
 bool ysProcess::executeCommand()
 {
     YS_TASKLOG("Executing command " + callCmd);
@@ -141,6 +216,8 @@ bool ysProcess::executeCommand()
     connect(&process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));
     connect(&process, SIGNAL(readyReadStandardOutput()), this, SLOT(logOutput()));
     connect(&timeoutTimer, SIGNAL(timeout()), &q, SLOT(quit()));
+
+    // TODO: Add timer event to monitor memory usage
 
     // Time measurement to diagnose RaidTool calling problems
     QTime ti;
@@ -231,7 +308,6 @@ bool ysProcess::executeCommand()
 
     return execResult;
 }
-
 
 
 void ysProcess::logOutput()

@@ -33,11 +33,13 @@ ysJob::~ysJob()
 }
 
 
-void ysJob::generateUniqueID()
+void ysJob::generateTaskID()
 {
     // TODO: Find improved way for generating uniqueID for task. For now, it's the filename.
-    uniqueID=taskFile;
-    uniqueID.truncate(uniqueID.indexOf("."));
+    taskID=taskFile;
+    taskID.truncate(taskID.indexOf("."));
+
+    uniqueID=YSRA->queue.uniqueID;
 }
 
 
@@ -78,7 +80,7 @@ bool ysJob::readTaskFile(QString filename)
     }
 
     // Create ID that is used for the log file and mail notifications
-    generateUniqueID();
+    generateTaskID();
 
     QDir queue(queueDir);
     bool fileMissing=false;
@@ -110,7 +112,7 @@ bool ysJob::readTaskFile(QString filename)
     }
 
     // Now that it is likely that the file can be processed, create a task specific log
-    YSRA->log.openTaskLog(uniqueID);
+    YSRA->log.openTaskLog(taskID, uniqueID);
 
     // Dump some job information into the job file
     logJobInformation();

@@ -5,8 +5,16 @@
 #include "ys_staticconfig.h"
 
 
+
 ysQueue::ysQueue()
 {
+    uniqueID="";
+}
+
+
+void ysQueue::generateUniqueID()
+{
+    uniqueID=QDate::currentDate().toString("ddMMyy")+QTime::currentTime().toString("HHmmsszzz");
 }
 
 
@@ -72,6 +80,11 @@ ysJob* ysQueue::fetchTask()
         // No unlocked file found. Possibly, the only available file is locked right now.
         return 0;
     }
+
+    // Generate a unique ID for this job based on the current time (incl ms to make it unique).
+    // This time ID will be used throughout the job processing (the job object retrieves it
+    // from the queue object during the setup of the job).
+    generateUniqueID();
 
     ysJob* newJob=new ysJob;
 
@@ -176,12 +189,12 @@ bool ysQueue::moveTaskToFailPath(ysJob* job, bool filesInQueue)
 
     // Create own subdir in fail path. Check for existance and recreate with timestamp if exists.
     QDir failDir(YSRA->staticConfig.failPath);
-    QString taskID=job->uniqueID;
+    QString taskID=job->taskID;
 
-    // Check if subfolder with same task already exists. If so, add unique time stamp
+    // Check if subfolder with same task already exists. If so, add unique time stamp.
     if (failDir.exists(taskID))
     {
-        taskID+= "_" + QDate::currentDate().toString("ddMMyy")+QTime::currentTime().toString("HHmmsszzz");
+        taskID+= "_" + uniqueID;
     }
 
     QString failSubdir=YSRA->staticConfig.failPath + "/" + taskID;
@@ -216,12 +229,12 @@ bool ysQueue::moveTaskToStoragePath(ysJob* job)
     {
         // Create own subdir in storage path. Check for existance and recreate with timestamp if exists.
         QDir storageDir(YSRA->staticConfig.storagePath);
-        QString taskID=job->uniqueID;
+        QString taskID=job->taskID;
 
-        // Check if subfolder with same task already exists. If so, add unique time stamp
+        // Check if subfolder with same task already exists. If so, add unique time stamp.
         if (storageDir.exists(taskID))
         {
-            taskID+= "_" + QDate::currentDate().toString("ddMMyy")+QTime::currentTime().toString("HHmmsszzz");
+            taskID+= "_" + uniqueID;
         }
 
         QString storageSubdir=YSRA->staticConfig.storagePath + "/" + taskID;

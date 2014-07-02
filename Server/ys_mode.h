@@ -17,14 +17,23 @@ public:
     bool readModeSettings(QString modeName, ysJob* job);
     void parseCmdlines();
 
-    QString getFullCmdLine();
+    QString getReconCmdLine();
+    QString getTransferCmdLine();
+    QString getPostprocCmdLine(int i);
 
     QString name;
 
     QString reconBinary;
     QString reconArguments;
 
-    QString parseString(QString input);
+    int postprocCount;
+    QStringList postprocBinary;
+    QStringList postprocArguments;
+
+    QString transferBinary;
+    QString transferArguments;
+
+    QString parseString(QString input, QString postprocIn="", QString postprocOut="");
 
     ysProcess* currentProcess;
     ysJob*     currentJob;

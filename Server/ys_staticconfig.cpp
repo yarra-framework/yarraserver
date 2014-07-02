@@ -21,7 +21,7 @@ ysStaticConfig::ysStaticConfig()
 
     notificationEnabled=false;
     notificationErrorMail="";
-    notificationFromAddress="yarraserver@localhost";
+    notificationFromAddress="YarraServer <noreply@localhost>";
 }
 
 

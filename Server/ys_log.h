@@ -13,7 +13,7 @@ public:
     void openSysLog();
     void closeSysLog();
 
-    void openTaskLog(QString suggestedName);
+    void openTaskLog(QString suggestedName, QString uniqueID);
     void closeTaskLog();
 
     void sysLog(QString message, bool screenOutput=false);

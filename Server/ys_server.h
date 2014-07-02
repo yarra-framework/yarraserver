@@ -1,7 +1,6 @@
 #ifndef YS_SERVER_H
 #define YS_SERVER_H
 
-
 #include "ys_global.h"
 #include "ys_controlinterface.h"
 #include "ys_staticconfig.h"
@@ -11,6 +10,7 @@
 #include "ys_process.h"
 #include "ys_queue.h"
 #include "ys_statistics.h"
+#include "ys_notificationmail.h"
 
 
 class ysServer: public QObject
@@ -46,6 +46,7 @@ public:
     ysQueue            queue;
     ysProcess          processor;
     ysJob*             currentJob;
+    ysNotificationMail notification;
 
     bool shutdownRequested;
     bool haltRequested;

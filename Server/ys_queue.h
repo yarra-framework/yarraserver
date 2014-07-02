@@ -23,6 +23,9 @@ public:
 
     static bool cleanPath(QString path);
 
+    QString uniqueID;
+    void generateUniqueID();
+
 protected:
 
     QDir queueDir;

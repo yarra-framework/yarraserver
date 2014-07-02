@@ -77,6 +77,9 @@ bool ysServer::prepare()
         return false;
     }
 
+    // Prepare the notification mailer
+    notification.prepare();
+
     return true;
 }
 
@@ -116,7 +119,6 @@ bool ysServer::runLoop()
 
             if (currentJob)
             {
-                // ## TODO: Integrate error handling!!!
                 bool procError=false;
 
                 // Delete all temporary files
@@ -186,6 +188,7 @@ bool ysServer::runLoop()
                 else
                 {
                     YS_SYSTASKLOG("Processing of task was successful.");
+                    notification.sendSuccessNotification(currentJob);
 
                     // If requested by mode, move raw data to storage location
                     queue.moveTaskToStoragePath(currentJob);

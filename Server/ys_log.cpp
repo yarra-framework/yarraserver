@@ -59,17 +59,17 @@ void ysLog::closeSysLog()
 }
 
 
-void ysLog::openTaskLog(QString suggestedName)
+void ysLog::openTaskLog(QString suggestedName, QString uniqueID)
 {
     QString logFilename=YSRA->staticConfig.logPath+"/"+suggestedName;
 
     taskLogFile.setFileName(logFilename + ".log");
 
-    // If the log file already exists from a previous reconstruction, add the current date and time
-    // (including ms to make it unique)
+    // If the log file already exists from a previous reconstruction, add the unique ID that
+    // was created from the time by the queue object
     if (taskLogFile.exists())
     {
-        logFilename += "_" + QDate::currentDate().toString("ddMMyy")+QTime::currentTime().toString("HHmmsszzz");
+        logFilename += "_" + uniqueID;
     }
 
     taskLogFilename=logFilename+ ".log";

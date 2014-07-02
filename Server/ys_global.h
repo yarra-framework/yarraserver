@@ -26,6 +26,8 @@
 
 #define YS_WAITMESSAGE         "Waiting for next task..."
 
+#define YS_INI_INVALID         "!!FAIL"
+
 
 #define YS_FREE(x) if (x!=0) { delete x; x=0; }
 #define YS_FREEARR(x) if (x!=0) { delete[] x; x=0; }
@@ -49,13 +51,23 @@
 
 
 // Macros for defining the reconstruction call in the mode file
-#define YS_MODEMACRO_INPUTFILE  "%i"
-#define YS_MODEMACRO_INPUTPATH  "%w"
-#define YS_MODEMACRO_MODEPATH   "%m"
-#define YS_MODEMACRO_OUTPUTPATH "%o"
-#define YS_MODEMACRO_TEMPPATH   "%t"
-#define YS_MODEMACRO_ACC        "%a"
+#define YS_MODEMACRO_RECON_INPUTFILE      "%rif"
+#define YS_MODEMACRO_RECON_TASKFILE       "%rit"
+#define YS_MODEMACRO_RECON_INPUTPATH      "%rid"
+#define YS_MODEMACRO_RECON_OUTPUTPATH     "%rod"
 
+#define YS_MODEMACRO_POSTPROC_INPUTPATH   "%pid"
+#define YS_MODEMACRO_POSTPROC_OUTPUTPATH  "%pod"
+
+#define YS_MODEMACRO_TRANSFER_PATH        "%td"
+#define YS_MODEMACRO_TEMPPATH             "%tmp"
+
+#define YS_MODEMACRO_MODE_PATH            "%md"
+#define YS_MODEMACRO_MODE_FILE            "%mf"
+
+#define YS_MODEMACRO_VALUE_ACC            "%vacc"
+#define YS_MODEMACRO_VALUE_TASKID         "%vtid"
+#define YS_MODEMACRO_VALUE_UNIQUETASKID   "%vuid"
 
 
 #endif // YS_GLOBAL_H

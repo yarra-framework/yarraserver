@@ -29,7 +29,10 @@ public:
 
     qint64 submittedScanFileSize;
 
-    QString uniqueID;
+    QString taskID;
+    QString uniqueID;    
+    QString getUniqueTaskID();
+    QString getTaskID();
 
     QString reconCallCmd;
     bool    storeProcessedFile;
@@ -38,13 +41,24 @@ public:
 
     QStringList getAllFiles();
 
-
 protected:
-    void generateUniqueID();
+    void generateTaskID();
     void logJobInformation();
-
-
 };
+
+
+
+inline QString ysJob::getUniqueTaskID()
+{
+    return taskID + "_" + uniqueID;
+}
+
+
+inline QString ysJob::getTaskID()
+{
+    return taskID;
+}
+
 
 
 #endif // YS_JOB_H
