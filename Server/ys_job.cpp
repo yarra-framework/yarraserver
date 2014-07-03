@@ -24,6 +24,10 @@ ysJob::ysJob()
 
     reconCallCmd="";
     storeProcessedFile=false;
+    durationSec=0;
+    duration="none";
+
+    errorReason="Unknown - Refer to log file";
 }
 
 
@@ -100,6 +104,10 @@ bool ysJob::readTaskFile(QString filename)
     {
         YS_SYSLOG_OUT("ERROR: The submitted task is missing input files.");
         YS_SYSLOG_OUT("ERROR: Task will not be processed and moved to fail directory.");
+
+        setErrorReason("Missing input files");
+        YSRA->notification.sendErrorNotification(this);
+
         return false;
     }
 
@@ -108,6 +116,10 @@ bool ysJob::readTaskFile(QString filename)
     {
         YS_SYSLOG_OUT("ERROR: The requested reconstruction mode is not available on this server.");
         YS_SYSLOG_OUT("ERROR: Cannot process the task. Moving task to fail directory.");
+
+        setErrorReason("Reconstruction mode not available");
+        YSRA->notification.sendErrorNotification(this);
+
         return false;
     }
 
@@ -168,3 +180,33 @@ QStringList ysJob::getAllFiles()
 
     return allFiles;
 }
+
+
+void ysJob::setProcessingEnd()
+{
+    processingEnd=QDateTime::currentDateTime();
+    durationSec=processingStart.secsTo(processingEnd);
+
+    // Convert duration in secs into a string
+    if (durationSec<120)
+    {
+        duration=QString::number(durationSec) + " sec";
+    }
+    else
+    {
+        int sec=durationSec % 60;
+        int min=(durationSec - sec)/60;
+
+        if (min<120)
+        {
+            duration=QString::number(min) + " min " + QString::number(sec) + " sec";
+        }
+        else
+        {
+            int rmin=min % 60;
+            int hour=(min - rmin)/60;
+            duration=QString::number(hour) + " h " + QString::number(rmin) + " min " + QString::number(sec) + " sec";
+        }
+    }
+}
+

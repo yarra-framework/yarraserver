@@ -25,6 +25,9 @@ bool ysProcess::prepareReconstruction(ysJob* job)
     {
         YS_TASKLOG_OUT("ERROR: Unable to read mode file correctly for mode " + modeName);
         YS_TASKLOG_OUT("Check syntax of mode file.");
+
+        YSRA->currentJob->setErrorReason("Unable to read mode file");
+        return false;
     }
 
     return true;
@@ -60,11 +63,15 @@ bool ysProcess::runReconstruction()
     YS_TASKLOG("Cleaning temporary files.");
     cleanTmpDir();
 
-    QDir outDir(reconDir);
-    if (outDir.entryList(QDir::Files).count()==0)
+    if (reconResult==true)
     {
-        YS_SYSTASKLOG_OUT("ERROR: Reconstruction directory contains no files.");
-        reconResult=false;
+        QDir outDir(reconDir);
+        if (outDir.entryList(QDir::Files).count()==0)
+        {
+            YS_SYSTASKLOG_OUT("ERROR: Reconstruction directory contains no files.");
+            YSRA->currentJob->setErrorReason("Reconstruction created no files");
+            reconResult=false;
+        }
     }
 
     return reconResult;
@@ -218,6 +225,7 @@ bool ysProcess::executeCommand()
     connect(&timeoutTimer, SIGNAL(timeout()), &q, SLOT(quit()));
 
     // TODO: Add timer event to monitor memory usage
+    // TODO: Add timer event to monitor halt request
 
     // Time measurement to diagnose RaidTool calling problems
     QTime ti;
@@ -232,6 +240,7 @@ bool ysProcess::executeCommand()
     {
         YS_TASKLOG("ERROR: Process returned immediately.");
         YS_TASKLOG("Is the mode configuration correct?");
+        YSRA->currentJob->setErrorReason("Process did not start");
     }
     else
     {
@@ -254,6 +263,7 @@ bool ysProcess::executeCommand()
         if (process.state()==QProcess::Running)
         {
             YS_SYSTASKLOG_OUT("WARNING: Process is still active. Killing process.");
+            YSRA->currentJob->setErrorReason("Process timed out");
             process.kill();
             execResult=false;
         }
@@ -294,6 +304,7 @@ bool ysProcess::executeCommand()
     if (process.exitStatus()==QProcess::CrashExit)
     {
         YS_TASKLOG("ERROR: The process crashed.");
+        YSRA->currentJob->setErrorReason("Process crashed");
         execResult=false;
     }
     if (process.exitStatus()==QProcess::NormalExit)
@@ -304,6 +315,7 @@ bool ysProcess::executeCommand()
     if (YSRA->haltRequested)
     {
         YS_TASKLOG("NOTE: Task has been terminated on user request.");
+        YSRA->currentJob->setErrorReason("Process terminated on request");
     }
 
     return execResult;

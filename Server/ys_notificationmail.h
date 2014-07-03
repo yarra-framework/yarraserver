@@ -13,9 +13,9 @@ public:
 
     void prepare();
     void sendSuccessNotification(ysJob* job);
+    void sendErrorNotification(ysJob* job);
 
-
-    void sendMail();
+    void sendMail(bool highPriority=false, QString attachFilename="");
 
     bool notificationEnabled;
     QString fromField;
@@ -23,6 +23,7 @@ public:
     QString receivers;
     QString subject;
     QString body;
+    QString footer;
 
 };
 

@@ -41,6 +41,13 @@ public:
 
     QStringList getAllFiles();
 
+    void setProcessingEnd();
+    qint64 durationSec;
+    QString duration;
+
+    QString errorReason;
+    void setErrorReason(QString reason);
+
 protected:
     void generateTaskID();
     void logJobInformation();
@@ -59,7 +66,12 @@ inline QString ysJob::getTaskID()
     return taskID;
 }
 
+inline void ysJob::setErrorReason(QString reason)
+{
+    errorReason=reason;
+}
 
 
 #endif // YS_JOB_H
+
 

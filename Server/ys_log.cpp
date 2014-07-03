@@ -92,6 +92,8 @@ void ysLog::closeTaskLog()
         taskLog("##[TASK END]######################################\n");
     }
     taskLogFile.close();
+
+    taskLogFilename="";
 }
 
 
@@ -136,4 +138,16 @@ void ysLog::taskLogProc(QString message)
     QString line=QDateTime::currentDateTime().toString("dd.MM.yy hh:mm:ss") + "  --  " + message;
     taskLogFile.write(line.toLatin1());
     taskLogFile.flush();
+}
+
+void ysLog::flushLogs()
+{
+    if (taskLogFile.isOpen())
+    {
+        taskLogFile.flush();
+    }
+    if (sysLogFile.isOpen())
+    {
+        sysLogFile.flush();
+    }
 }

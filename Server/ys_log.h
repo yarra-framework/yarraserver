@@ -26,6 +26,7 @@ public:
     void sysTaskLogOut(QString message);
 
     QString getTaskLogFilename();
+    void flushLogs();
 
 protected:
 

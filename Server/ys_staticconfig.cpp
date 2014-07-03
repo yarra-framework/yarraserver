@@ -8,7 +8,7 @@ ysStaticConfig::ysStaticConfig()
 {
     execPath=QCoreApplication::applicationDirPath();
 
-    serverName="Yarra";
+    serverName="Default Yarra server";
     serverType="Unspecified";
 
     logPath=execPath+"/log";

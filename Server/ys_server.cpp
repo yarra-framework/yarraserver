@@ -106,6 +106,8 @@ bool ysServer::runLoop()
     YS_SYSLOG_OUT("");
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
+    // TODO: Add monitor for remaining disk space and send notification mail
+
     while (!shutdownRequested)
     {
         if (queue.isTaskAvailable())
@@ -136,7 +138,7 @@ bool ysServer::runLoop()
                     procError=true;
                 }
 
-                if (!procError)
+                if ((!procError) && (!haltRequested))
                 {
                     if (!processor.prepareOutputDirs())
                     {
@@ -146,7 +148,7 @@ bool ysServer::runLoop()
                 }
 
                 // 2. Reconstruction module
-                if (!procError)
+                if ((!procError) && (!haltRequested))
                 {
                     if (!processor.runReconstruction())
                     {
@@ -156,7 +158,7 @@ bool ysServer::runLoop()
                 }
 
                 // 3. Postprocessing modules
-                if (!procError)
+                if ((!procError) && (!haltRequested))
                 {
                     if (!processor.runPostProcessing())
                     {
@@ -166,7 +168,7 @@ bool ysServer::runLoop()
                 }
 
                 // 4. Transfer module
-                if (!procError)
+                if ((!procError) && (!haltRequested))
                 {
                     if (!processor.runTransfer())
                     {
@@ -177,21 +179,23 @@ bool ysServer::runLoop()
 
                 // 5. Clean up
                 processor.finish();
+                currentJob->setProcessingEnd();
 
                 if (procError)
                 {
-                    YS_SYSTASKLOG("ERROR: Processing of task was not successful.");
-
-                    // If requested by mode, move raw data to storage location
+                    // Move raw data to the fail location
                     queue.moveTaskToFailPath(currentJob);
+
+                    YS_SYSTASKLOG("ERROR: Processing of task was not successful.");
+                    notification.sendErrorNotification(currentJob);
                 }
                 else
                 {
-                    YS_SYSTASKLOG("Processing of task was successful.");
-                    notification.sendSuccessNotification(currentJob);
-
                     // If requested by mode, move raw data to storage location
                     queue.moveTaskToStoragePath(currentJob);
+
+                    YS_SYSTASKLOG("Processing of task was successful.");
+                    notification.sendSuccessNotification(currentJob);
                 }
 
                 // Delete all temporary files
