@@ -23,6 +23,8 @@ public:
     QString notificationErrorMail;
     QString notificationFromAddress;
 
+    double memkillThreshold;
+
     bool readConfiguration();
 
     QString execPath;

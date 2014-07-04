@@ -23,6 +23,7 @@
 
 #define YS_EXEC_LOOPSLEEP      10
 #define YS_EXEC_TIMEOUT        86400000
+#define YS_EXEC_MEMCHECK       1000
 
 #define YS_WAITMESSAGE         "Waiting for next task..."
 

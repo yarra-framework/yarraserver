@@ -34,10 +34,21 @@ public:
     QString callCmd;
     QProcess process;
 
+    QTimer* memcheckTimer;
+
     bool executeCommand();
+
+    int getAvailMemoryMB();
+    int getTotalMemoryMB();
+    int totalMemory;
+    double memkillThreshold;
+    int memoryDuringKill;
+    bool memkillOccured;
+    bool disableMemKill;
 
 public slots:
     void logOutput();
+    void checkMemory();
 
 };
 

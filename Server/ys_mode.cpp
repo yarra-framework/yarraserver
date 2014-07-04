@@ -10,13 +10,16 @@ ysMode::ysMode()
 
     reconBinary="";
     reconArguments="";
+    reconDisableMemKill=false;
 
     postprocCount=0;
     postprocBinary.clear();
     postprocArguments.clear();
+    postprocDisableMemKill=false;
 
     transferBinary="";
     transferArguments="";
+    transferDisableMemKill=false;
 
     currentJob=0;
     currentProcess=0;
@@ -41,8 +44,9 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
         QSettings modeFile(modeFilename, QSettings::IniFormat);
 
         // Reconstruction settings
-        reconBinary   =modeFile.value("Reconstruction/Bin",  YS_INI_INVALID).toString();
-        reconArguments=modeFile.value("Reconstruction/Args", YS_INI_INVALID).toString();
+        reconBinary        =modeFile.value("Reconstruction/Bin",  YS_INI_INVALID).toString();
+        reconArguments     =modeFile.value("Reconstruction/Args", YS_INI_INVALID).toString();
+        reconDisableMemKill=modeFile.value("Reconstruction/DisableMemKill", false).toBool();
 
         // Read post proc settings
         postprocCount=0;
@@ -53,10 +57,12 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
             postprocBinary   .append(modeFile.value("PostProcessing/Bin" +QString::number(postprocCount), "").toString());
             postprocArguments.append(modeFile.value("PostProcessing/Args"+QString::number(postprocCount), "").toString());
         }
+        postprocDisableMemKill=modeFile.value("PostProcessing/DisableMemKill", false).toBool();
 
         // Read transfer settings
-        transferBinary   =modeFile.value("Transfer/Bin",  "").toString();
-        transferArguments=modeFile.value("Transfer/Args", "").toString();
+        transferBinary        =modeFile.value("Transfer/Bin",  "").toString();
+        transferArguments     =modeFile.value("Transfer/Args", "").toString();
+        transferDisableMemKill=modeFile.value("Transfer/DisableMemKill", false).toBool();
 
         // Read the additional options from the mode file
         currentJob->storeProcessedFile=modeFile.value("Options/KeepRawdata", false).toBool();

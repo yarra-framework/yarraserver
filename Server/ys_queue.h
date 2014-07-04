@@ -33,6 +33,8 @@ protected:
     bool moveFiles(QStringList files, QString sourcePath, QString targetPath);
     bool isTaskFileLocked(QString taskFile);
 
+    int getAvailSpaceGB(QString path);
+
 
 };
 

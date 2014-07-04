@@ -25,13 +25,16 @@ public:
 
     QString reconBinary;
     QString reconArguments;
+    bool    reconDisableMemKill;
 
     int postprocCount;
     QStringList postprocBinary;
     QStringList postprocArguments;
+    bool        postprocDisableMemKill;
 
     QString transferBinary;
     QString transferArguments;
+    bool    transferDisableMemKill;
 
     QString parseString(QString input, QString postprocIn="", QString postprocOut="");
 

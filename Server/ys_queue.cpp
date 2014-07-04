@@ -4,6 +4,7 @@
 #include "ys_server.h"
 #include "ys_staticconfig.h"
 
+#include <sys/statvfs.h>
 
 
 ysQueue::ysQueue()
@@ -74,6 +75,8 @@ ysJob* ysQueue::fetchTask()
             taskFilename="";
         }
     }
+
+    // TODO: Check available diskspace
 
     if (taskFilename=="")
     {
@@ -285,4 +288,20 @@ bool ysQueue::moveFiles(QStringList files, QString sourcePath, QString targetPat
 
 
 
+int ysQueue::getAvailSpaceGB(QString path)
+{
+    struct statvfs64 fiData;
+
+    QByteArray byteArray = path.toUtf8();
+
+    if((statvfs64(byteArray.constData(),&fiData)) < 0)
+    {
+        YS_SYSLOG_OUT("Failed to stat " + path);
+        return -1;
+    }
+    else
+    {
+        return qint64(fiData.f_bsize)*qint64(fiData.f_bavail)/(1024*1024*1024);
+    }
+}
 

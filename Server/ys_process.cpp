@@ -3,10 +3,17 @@
 #include "ys_global.h"
 #include "ys_queue.h"
 
+
 ysProcess::ysProcess()
 {
     mode=0;
     callCmd="";
+    memcheckTimer=0;
+    memkillThreshold=-1;
+    totalMemory=1;
+    memkillOccured=false;
+    memoryDuringKill=0;
+    disableMemKill=false;
 }
 
 
@@ -17,6 +24,8 @@ ysProcess::~ysProcess()
 
 bool ysProcess::prepareReconstruction(ysJob* job)
 {
+    getAvailMemoryMB();
+
     mode=new ysMode;
     mode->currentProcess=this;
 
@@ -48,6 +57,7 @@ bool ysProcess::runReconstruction()
 
     callCmd=mode->getReconCmdLine();
     process.setWorkingDirectory(YSRA->staticConfig.workPath);
+    disableMemKill=mode->reconDisableMemKill;
 
     if (!executeCommand())
     {
@@ -86,6 +96,7 @@ bool ysProcess::runPostProcessing()
         return true;
     }
 
+    disableMemKill=mode->postprocDisableMemKill;
     bool postprocResult=true;
 
     for (int i=0; i<mode->postprocCount; i++)
@@ -142,6 +153,7 @@ bool ysProcess::runTransfer()
 
     callCmd=mode->getTransferCmdLine();
     process.setWorkingDirectory(transferDir);
+    disableMemKill=mode->transferDisableMemKill;
 
     if (!executeCommand())
     {
@@ -217,12 +229,27 @@ bool ysProcess::executeCommand()
 
     QTimer timeoutTimer;
     timeoutTimer.setSingleShot(true);
-    timeoutTimer.setInterval(YS_EXEC_TIMEOUT);
+    timeoutTimer.setInterval(YS_EXEC_TIMEOUT); // TODO: Make configurable
+
+    memcheckTimer=new QTimer();
+    memcheckTimer->setSingleShot(false);
+    memcheckTimer->setInterval(YS_EXEC_MEMCHECK);
+    totalMemory=getTotalMemoryMB();
+    memkillOccured=false;
+    memoryDuringKill=0;
+    memkillThreshold=YSRA->staticConfig.memkillThreshold;
+
+    if (disableMemKill)
+    {
+        memkillThreshold=-1;
+    }
+
     QEventLoop q;
     connect(&process, SIGNAL(finished(int , QProcess::ExitStatus)), &q, SLOT(quit()));
     connect(&process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));
     connect(&process, SIGNAL(readyReadStandardOutput()), this, SLOT(logOutput()));
     connect(&timeoutTimer, SIGNAL(timeout()), &q, SLOT(quit()));
+    connect(memcheckTimer, SIGNAL(timeout()), this, SLOT(checkMemory()));
 
     // TODO: Add timer event to monitor memory usage
     // TODO: Add timer event to monitor halt request
@@ -244,6 +271,7 @@ bool ysProcess::executeCommand()
     }
     else
     {
+        memcheckTimer->start();
         q.exec();
     }
 
@@ -318,6 +346,15 @@ bool ysProcess::executeCommand()
         YSRA->currentJob->setErrorReason("Process terminated on request");
     }
 
+    if (memkillOccured)
+    {
+        YS_TASKLOG("ERROR: Task has been killed due to lack of memory.");
+        YS_TASKLOG("ERROR: Free memory when killed " + QString::number(memoryDuringKill) + "Mb");
+        YSRA->currentJob->setErrorReason("Out of memory");
+    }
+
+    YS_FREE(memcheckTimer);
+
     return execResult;
 }
 
@@ -329,3 +366,48 @@ void ysProcess::logOutput()
         YS_TASKLOGPROC(process.readLine());
     }
 }
+
+
+int ysProcess::getAvailMemoryMB()
+{
+    // TODO: This is not a proper way of determing the memory!
+    int availMem=qint64(sysconf(_SC_PAGESIZE)) * qint64(sysconf(_SC_AVPHYS_PAGES)) / (1024*1024);
+    return availMem;
+ }
+
+
+int ysProcess::getTotalMemoryMB()
+{
+    int totalMem=qint64(sysconf(_SC_PAGESIZE)) * qint64(sysconf(_SC_PHYS_PAGES)) / (1024*1024);
+    return totalMem;
+ }
+
+
+
+void ysProcess::checkMemory()
+{
+    memcheckTimer->stop();
+
+    int availMem=getAvailMemoryMB();
+
+    double percent=100;
+    if  (totalMemory!=0)
+    {
+        percent=double(availMem)/double(totalMemory)*100.;
+    }
+
+    //YS_OUT("##MEMCHECK## " + QString::number(availMem) + " = " + QString::number(int(percent)) + "%");
+
+    if ((memkillThreshold>0) && (percent<memkillThreshold))
+    {
+        YS_SYSLOG_OUT("WARNING: Memory is low ("+ QString::number(availMem) + " Mb)");
+        YS_SYSLOG_OUT("WARNING: Killing process due to lack of memory.");
+        process.kill();
+        memkillOccured=true;
+        memoryDuringKill=availMem;
+    }
+
+    memcheckTimer->start();
+}
+
+

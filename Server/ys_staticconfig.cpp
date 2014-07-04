@@ -22,6 +22,8 @@ ysStaticConfig::ysStaticConfig()
     notificationEnabled=false;
     notificationErrorMail="";
     notificationFromAddress="YarraServer <noreply@localhost>";
+
+    memkillThreshold=1.;
 }
 
 
@@ -51,6 +53,8 @@ bool ysStaticConfig::readConfiguration()
         notificationEnabled    =configFile.value("Notification/Enabled",     notificationEnabled).toBool();
         notificationErrorMail  =configFile.value("Notification/ErrorMail",   notificationErrorMail).toString();
         notificationFromAddress=configFile.value("Notification/FromAddress", notificationFromAddress).toString();
+
+        memkillThreshold=configFile.value("Options/MemKillThreshold", memkillThreshold).toDouble();
     }
 
     return true;
