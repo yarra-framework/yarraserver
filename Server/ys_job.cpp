@@ -208,5 +208,6 @@ void ysJob::setProcessingEnd()
             duration=QString::number(hour) + " h " + QString::number(rmin) + " min " + QString::number(sec) + " sec";
         }
     }
+    YS_TASKLOG("Duration of task: " + duration);
 }
 

@@ -29,6 +29,8 @@
 
 #define YS_INI_INVALID         "!!FAIL"
 
+#define YS_PROCCOUNT_MAX       50
+
 
 #define YS_FREE(x) if (x!=0) { delete x; x=0; }
 #define YS_FREEARR(x) if (x!=0) { delete[] x; x=0; }

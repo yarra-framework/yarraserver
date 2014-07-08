@@ -23,7 +23,9 @@ ysStaticConfig::ysStaticConfig()
     notificationErrorMail="";
     notificationFromAddress="YarraServer <noreply@localhost>";
 
-    memkillThreshold=1.;
+    memkillThreshold=95;
+    driveSpaceNeededGB=20;
+    driveSpaceNotificationThresholdGB=0;
 }
 
 
@@ -55,6 +57,8 @@ bool ysStaticConfig::readConfiguration()
         notificationFromAddress=configFile.value("Notification/FromAddress", notificationFromAddress).toString();
 
         memkillThreshold=configFile.value("Options/MemKillThreshold", memkillThreshold).toDouble();
+        driveSpaceNeededGB=configFile.value("Options/DriveSpaceNeeded", driveSpaceNeededGB).toInt();
+        driveSpaceNotificationThresholdGB=configFile.value("Options/DriveSpaceNotificationThreshold", driveSpaceNotificationThresholdGB).toInt();
     }
 
     return true;

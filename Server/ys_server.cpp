@@ -104,6 +104,7 @@ bool ysServer::runLoop()
 
     YS_OUT("Server running (threadID " + QString::number((long)this->thread()->currentThreadId()) + ")");
     YS_SYSLOG_OUT("");
+    queue.checkAndSendDiskSpaceNotification();
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
     // TODO: Add monitor for remaining disk space and send notification mail
@@ -147,7 +148,17 @@ bool ysServer::runLoop()
                     }
                 }
 
-                // 2. Reconstruction module
+                // 2. Postprocessing modules
+                if ((!procError) && (!haltRequested))
+                {
+                    if (!processor.runPreProcessing())
+                    {
+                        YS_SYSTASKLOG_OUT("Running pre-processing modules failed.");
+                        procError=true;
+                    }
+                }
+
+                // 3. Reconstruction module
                 if ((!procError) && (!haltRequested))
                 {
                     if (!processor.runReconstruction())
@@ -157,7 +168,7 @@ bool ysServer::runLoop()
                     }
                 }
 
-                // 3. Postprocessing modules
+                // 4. Postprocessing modules
                 if ((!procError) && (!haltRequested))
                 {
                     if (!processor.runPostProcessing())
@@ -167,7 +178,7 @@ bool ysServer::runLoop()
                     }
                 }
 
-                // 4. Transfer module
+                // 5. Transfer module
                 if ((!procError) && (!haltRequested))
                 {
                     if (!processor.runTransfer())
@@ -177,7 +188,7 @@ bool ysServer::runLoop()
                     }
                 }
 
-                // 5. Clean up
+                // 6. Clean up
                 processor.finish();
                 currentJob->setProcessingEnd();
 
@@ -204,6 +215,10 @@ bool ysServer::runLoop()
 
                 // Discard the current job
                 YS_FREE(currentJob);
+
+                // Check the current diskspace situation and notify the admin
+                // if the server is out of storage capacity
+                queue.checkAndSendDiskSpaceNotification();
 
                 YS_SYSLOG_OUT("Job has finished.\n");
                 YS_SYSLOG_OUT(YS_WAITMESSAGE);

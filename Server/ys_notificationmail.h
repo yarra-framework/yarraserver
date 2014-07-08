@@ -15,6 +15,8 @@ public:
     void sendSuccessNotification(ysJob* job);
     void sendErrorNotification(ysJob* job);
 
+    void sendDiskSpaceNotification(QString dirs);
+
     void sendMail(bool highPriority=false, QString attachFilename="");
 
     bool notificationEnabled;

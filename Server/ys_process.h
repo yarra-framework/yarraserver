@@ -16,6 +16,7 @@ public:
     ~ysProcess();
 
     bool prepareReconstruction(ysJob* job);
+    bool runPreProcessing ();
     bool runReconstruction();
     bool runPostProcessing();
     bool runTransfer();
@@ -38,9 +39,9 @@ public:
 
     bool executeCommand();
 
-    int getAvailMemoryMB();
-    int getTotalMemoryMB();
-    int totalMemory;
+    int getUsedMemoryMB();
+    int getPhysicalMemoryMB();
+    int totalPhysicalMemory;
     double memkillThreshold;
     int memoryDuringKill;
     bool memkillOccured;

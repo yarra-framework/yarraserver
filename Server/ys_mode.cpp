@@ -8,6 +8,11 @@ ysMode::ysMode()
 {
     name="!!INVALID";
 
+    preprocCount=0;
+    preprocBinary.clear();
+    preprocArguments.clear();
+    preprocDisableMemKill=false;
+
     reconBinary="";
     reconArguments="";
     reconDisableMemKill=false;
@@ -43,14 +48,25 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
         // Open the mode file
         QSettings modeFile(modeFilename, QSettings::IniFormat);
 
+        // Read pre-processing settings
+        preprocCount=0;
+        while ((preprocCount<YS_PROCCOUNT_MAX) &&
+               (modeFile.value("PreProcessing/Bin"+QString::number(preprocCount+1), YS_INI_INVALID).toString()!=YS_INI_INVALID))
+        {
+            preprocCount++;
+            preprocBinary   .append(modeFile.value("PreProcessing/Bin" +QString::number(preprocCount), "").toString());
+            preprocArguments.append(modeFile.value("PreProcessing/Args"+QString::number(preprocCount), "").toString());
+        }
+        preprocDisableMemKill=modeFile.value("PreProcessing/DisableMemKill", false).toBool();
+
         // Reconstruction settings
         reconBinary        =modeFile.value("Reconstruction/Bin",  YS_INI_INVALID).toString();
         reconArguments     =modeFile.value("Reconstruction/Args", YS_INI_INVALID).toString();
         reconDisableMemKill=modeFile.value("Reconstruction/DisableMemKill", false).toBool();
 
-        // Read post proc settings
+        // Read post-processing settings
         postprocCount=0;
-        while ((postprocCount<50) &&
+        while ((postprocCount<YS_PROCCOUNT_MAX) &&
                (modeFile.value("PostProcessing/Bin"+QString::number(postprocCount+1), YS_INI_INVALID).toString()!=YS_INI_INVALID))
         {
             postprocCount++;
@@ -74,13 +90,21 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
 
 void ysMode::parseCmdlines()
 {
+    // Read preprocessing settings
+    for (int i=0; i<preprocCount; i++)
+    {
+        preprocBinary.replace(i,parseString(preprocBinary.at(i)));
+        preprocArguments.replace(i,parseString(preprocArguments.at(i)));
+    }
+
+    // Read reconstruction settings
     reconBinary   =parseString(reconBinary);
     reconArguments=parseString(reconArguments);
 
+    // Read postprocessing settings
     QString inDir=currentProcess->reconDir;
     QString outDir="";
 
-    // Add command lines for postprocessing and storage
     for (int i=0; i<postprocCount; i++)
     {
         outDir=YSRA->staticConfig.workPath+"/"+YS_WORKDIR_POSTPROC+QString::number(i+1);
@@ -89,6 +113,7 @@ void ysMode::parseCmdlines()
         inDir=outDir;
     }
 
+    // Read transfer settings
     transferBinary   =parseString(transferBinary);
     transferArguments=parseString(transferArguments);
 }
@@ -106,6 +131,17 @@ QString ysMode::getTransferCmdLine()
 }
 
 
+QString ysMode::getPreprocCmdLine(int i)
+{
+    if (i>=preprocCount)
+    {
+        return "";
+    }
+
+    return preprocBinary.at(i) + " " + preprocArguments.at(i);
+}
+
+
 QString ysMode::getPostprocCmdLine(int i)
 {
     if (i>=postprocCount)
@@ -115,6 +151,7 @@ QString ysMode::getPostprocCmdLine(int i)
 
     return postprocBinary.at(i) + " " + postprocArguments.at(i);
 }
+
 
 
 QString ysMode::parseString(QString input, QString postprocIn, QString postprocOut)

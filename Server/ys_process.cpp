@@ -10,7 +10,7 @@ ysProcess::ysProcess()
     callCmd="";
     memcheckTimer=0;
     memkillThreshold=-1;
-    totalMemory=1;
+    totalPhysicalMemory=1;
     memkillOccured=false;
     memoryDuringKill=0;
     disableMemKill=false;
@@ -24,7 +24,7 @@ ysProcess::~ysProcess()
 
 bool ysProcess::prepareReconstruction(ysJob* job)
 {
-    getAvailMemoryMB();
+    getPhysicalMemoryMB();
 
     mode=new ysMode;
     mode->currentProcess=this;
@@ -46,6 +46,48 @@ bool ysProcess::prepareReconstruction(ysJob* job)
 void ysProcess::finish()
 {
     YS_FREE(mode);
+}
+
+
+bool ysProcess::runPreProcessing()
+{
+    // Check if there are any preprocessing modules at all
+    if (mode->preprocCount==0)
+    {
+        return true;
+    }
+
+    disableMemKill=mode->preprocDisableMemKill;
+    bool preprocResult=true;
+
+    for (int i=0; i<mode->preprocCount; i++)
+    {
+        YS_SYSTASKLOG_OUT("Now running pre processing module " + QString::number(i) + " ...");
+
+        callCmd=mode->getPreprocCmdLine(i);
+        process.setWorkingDirectory(YSRA->staticConfig.workPath);
+
+        if (!executeCommand())
+        {
+            YS_TASKLOG("Pre processing failed.");
+            preprocResult=false;
+        }
+        else
+        {
+            YS_TASKLOG("Pre processing finished.");
+            preprocResult=true;
+        }
+
+        YS_TASKLOG("Cleaning temporary files.");
+        cleanTmpDir();
+
+        if (!preprocResult)
+        {
+            break;
+        }
+    }
+
+    return preprocResult;
 }
 
 
@@ -234,7 +276,7 @@ bool ysProcess::executeCommand()
     memcheckTimer=new QTimer();
     memcheckTimer->setSingleShot(false);
     memcheckTimer->setInterval(YS_EXEC_MEMCHECK);
-    totalMemory=getTotalMemoryMB();
+    totalPhysicalMemory=getPhysicalMemoryMB();
     memkillOccured=false;
     memoryDuringKill=0;
     memkillThreshold=YSRA->staticConfig.memkillThreshold;
@@ -251,7 +293,6 @@ bool ysProcess::executeCommand()
     connect(&timeoutTimer, SIGNAL(timeout()), &q, SLOT(quit()));
     connect(memcheckTimer, SIGNAL(timeout()), this, SLOT(checkMemory()));
 
-    // TODO: Add timer event to monitor memory usage
     // TODO: Add timer event to monitor halt request
 
     // Time measurement to diagnose RaidTool calling problems
@@ -349,7 +390,7 @@ bool ysProcess::executeCommand()
     if (memkillOccured)
     {
         YS_TASKLOG("ERROR: Task has been killed due to lack of memory.");
-        YS_TASKLOG("ERROR: Free memory when killed " + QString::number(memoryDuringKill) + "Mb");
+        YS_TASKLOG("ERROR: Used memory when killed was " + QString::number(memoryDuringKill) + "Mb ("+QString::number(totalPhysicalMemory)+" MB physical memory).");
         YSRA->currentJob->setErrorReason("Out of memory");
     }
 
@@ -368,15 +409,42 @@ void ysProcess::logOutput()
 }
 
 
-int ysProcess::getAvailMemoryMB()
+int ysProcess::getUsedMemoryMB()
 {
-    // TODO: This is not a proper way of determing the memory!
-    int availMem=qint64(sysconf(_SC_PAGESIZE)) * qint64(sysconf(_SC_AVPHYS_PAGES)) / (1024*1024);
-    return availMem;
+    // TODO: Potentially also analyze for zombie state of the process
+
+    QFile memfile(QString("/proc/"+QString::number(process.pid())+"/status"));
+
+    if ((!memfile.open(QIODevice::ReadOnly)) || (!memfile.isReadable()))
+    {
+        YS_SYSLOG_OUT("WARNING: Can't read memfile. Memkill will not work.");
+        return -1;
+    }
+
+    QByteArray contents = memfile.readAll();
+    memfile.close();
+
+    QTextStream in(&contents);
+
+    int usedMem=-1;
+
+    while (!in.atEnd())
+    {
+        QString line = in.readLine();
+        if (line.contains("VmSize:"))
+        {
+            line.remove(0,7);
+            line.truncate(line.indexOf(" kB"));
+            usedMem=line.toInt()/1024;
+            break;
+        }
+    }
+
+    return usedMem;
  }
 
 
-int ysProcess::getTotalMemoryMB()
+int ysProcess::getPhysicalMemoryMB()
 {
     int totalMem=qint64(sysconf(_SC_PAGESIZE)) * qint64(sysconf(_SC_PHYS_PAGES)) / (1024*1024);
     return totalMem;
@@ -388,23 +456,26 @@ void ysProcess::checkMemory()
 {
     memcheckTimer->stop();
 
-    int availMem=getAvailMemoryMB();
+    int usedMem=getUsedMemoryMB();
 
-    double percent=100;
-    if  (totalMemory!=0)
+    if (usedMem>0)
     {
-        percent=double(availMem)/double(totalMemory)*100.;
-    }
+        double percent=100;
+        if  (totalPhysicalMemory!=0)
+        {
+            percent=double(usedMem)/double(totalPhysicalMemory)*100.;
+        }
 
-    //YS_OUT("##MEMCHECK## " + QString::number(availMem) + " = " + QString::number(int(percent)) + "%");
+        //YS_OUT("##MEMCHECK## " + QString::number(usedMem) + " = " + QString::number(int(percent)) + "%");
 
-    if ((memkillThreshold>0) && (percent<memkillThreshold))
-    {
-        YS_SYSLOG_OUT("WARNING: Memory is low ("+ QString::number(availMem) + " Mb)");
-        YS_SYSLOG_OUT("WARNING: Killing process due to lack of memory.");
-        process.kill();
-        memkillOccured=true;
-        memoryDuringKill=availMem;
+        if ((memkillThreshold>0) && (percent>memkillThreshold))
+        {
+            YS_SYSLOG_OUT("WARNING: Memory usage is high ("+ QString::number(usedMem) + " Mb).");
+            YS_SYSLOG_OUT("WARNING: Killing process due to lack of memory.");
+            process.kill();
+            memkillOccured=true;
+            memoryDuringKill=usedMem;
+        }
     }
 
     memcheckTimer->start();

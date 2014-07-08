@@ -33,6 +33,9 @@ bool ysQueue::prepare()
     queueDir.setFilter(QDir::Files);
     queueDir.setSorting(QDir::Time | QDir::Reversed);
 
+    lastDiskSpaceNotification=QDateTime::currentDateTime();
+    diskSpaceNotificationSent=false;
+
     return true;
 }
 
@@ -76,11 +79,17 @@ ysJob* ysQueue::fetchTask()
         }
     }
 
-    // TODO: Check available diskspace
+    // Check available diskspace. Don't process any case if
+    // it cannot guaranteed that enough space is available.
+    if (!isRequiredDiskSpaceAvailble())
+    {
+        taskFilename="";
+    }
 
     if (taskFilename=="")
     {
-        // No unlocked file found. Possibly, the only available file is locked right now.
+        // No file to process found. Possibly, the only available file is locked right now,
+        // or there is not enough diskspace available.
         return 0;
     }
 
@@ -305,3 +314,67 @@ int ysQueue::getAvailSpaceGB(QString path)
     }
 }
 
+
+void ysQueue::checkAndSendDiskSpaceNotification()
+{
+    int spaceThreshold=YSRA->staticConfig.driveSpaceNotificationThresholdGB;
+
+    bool triggerNotification=false;
+    QString affectedDirs="";
+
+    if (getAvailSpaceGB(YSRA->staticConfig.inqueuePath)<spaceThreshold)
+    {
+        triggerNotification=true;
+        affectedDirs += YSRA->staticConfig.inqueuePath + "; ";
+    }
+
+    if (getAvailSpaceGB(YSRA->staticConfig.workPath)<spaceThreshold)
+    {
+        triggerNotification=true;
+        affectedDirs += YSRA->staticConfig.workPath + "; ";
+    }
+
+    if (getAvailSpaceGB(YSRA->staticConfig.failPath)<spaceThreshold)
+    {
+        triggerNotification=true;
+        affectedDirs += YSRA->staticConfig.workPath + "; ";
+    }
+
+    if (getAvailSpaceGB(YSRA->staticConfig.storagePath)<spaceThreshold)
+    {
+        triggerNotification=true;
+        affectedDirs += YSRA->staticConfig.storagePath + "; ";
+    }
+
+    if (triggerNotification)
+    {
+        YS_SYSLOG_OUT("WARNING: Low diskspace.");
+        YS_SYSLOG("The following directories are affected:\n" + affectedDirs);
+    }
+
+    // Don't send notification mails more often than every 12 hours
+    int notificationInterval=60*60*12;
+
+    if ((triggerNotification) &&
+        ((diskSpaceNotificationSent==false) || (lastDiskSpaceNotification.secsTo(QDateTime::currentDateTime())>notificationInterval)))
+    {
+        YSRA->notification.sendDiskSpaceNotification(affectedDirs);
+        lastDiskSpaceNotification=QDateTime::currentDateTime();
+        diskSpaceNotificationSent=true;
+    }
+
+}\
+
+
+bool ysQueue::isRequiredDiskSpaceAvailble()
+{
+    // TODO: Check the following dirs: workdir, faildir, storagepath
+
+    // Return false if in any of the folders is less space free than the
+    // configured space limit
+
+    // TODO: Send error notification to the admin, but not more often
+    //       than once an hour
+
+    return true;
+}

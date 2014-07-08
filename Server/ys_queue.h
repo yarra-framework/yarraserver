@@ -26,6 +26,12 @@ public:
     QString uniqueID;
     void generateUniqueID();
 
+    void checkAndSendDiskSpaceNotification();
+    QDateTime lastDiskSpaceNotification;
+    bool      diskSpaceNotificationSent;
+
+    bool isRequiredDiskSpaceAvailble();
+
 protected:
 
     QDir queueDir;

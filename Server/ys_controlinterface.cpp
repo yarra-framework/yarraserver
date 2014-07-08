@@ -55,7 +55,8 @@ bool ysControlInterface::prepare()
     if (!ipcServer.listen(YS_CI_ID))
     {
         // Launching the control server did not work.
-        // TODO: Create error message
+        YS_OUT("ERROR: Launching the IPC interface did not succeed.");
+        YS_OUT("Cannot launch server.");
         ipcError=true;
     }
 

@@ -24,6 +24,8 @@ public:
     QString notificationFromAddress;
 
     double memkillThreshold;
+    int    driveSpaceNeededGB;
+    int    driveSpaceNotificationThresholdGB;
 
     bool readConfiguration();
 
