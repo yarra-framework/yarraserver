@@ -174,6 +174,13 @@ QString ysMode::parseString(QString input, QString postprocIn, QString postprocO
         input.replace(YS_MODEMACRO_RECON_TASKFILE,replacement);
     }
 
+    if (input.contains(YS_MODEMACRO_RECON_INPUTNAME))
+    {
+        QString replacement=currentJob->taskFile;
+        replacement.truncate(replacement.indexOf(YS_TASK_EXTENSION));
+        input.replace(YS_MODEMACRO_RECON_INPUTNAME,replacement);
+    }
+
     if (input.contains(YS_MODEMACRO_RECON_OUTPUTPATH))
     {
         QString replacement=currentProcess->reconDir;

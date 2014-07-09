@@ -26,6 +26,8 @@ ysStaticConfig::ysStaticConfig()
     memkillThreshold=95;
     driveSpaceNeededGB=20;
     driveSpaceNotificationThresholdGB=0;
+
+    processTimeout=YS_EXEC_TIMEOUT;
 }
 
 
@@ -56,6 +58,7 @@ bool ysStaticConfig::readConfiguration()
         notificationErrorMail  =configFile.value("Notification/ErrorMail",   notificationErrorMail).toString();
         notificationFromAddress=configFile.value("Notification/FromAddress", notificationFromAddress).toString();
 
+        processTimeout=configFile.value("Options/ProcessTimeout", processTimeout).toInt();
         memkillThreshold=configFile.value("Options/MemKillThreshold", memkillThreshold).toDouble();
         driveSpaceNeededGB=configFile.value("Options/DriveSpaceNeeded", driveSpaceNeededGB).toInt();
         driveSpaceNotificationThresholdGB=configFile.value("Options/DriveSpaceNotificationThreshold", driveSpaceNotificationThresholdGB).toInt();

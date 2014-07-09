@@ -47,6 +47,8 @@ public:
     bool memkillOccured;
     bool disableMemKill;
 
+    void haltAnyProcess();
+
 public slots:
     void logOutput();
     void checkMemory();

@@ -31,6 +31,9 @@ public:
     bool      diskSpaceNotificationSent;
 
     bool isRequiredDiskSpaceAvailble();
+    QDateTime lastDiskErrorNotification;
+    bool      diskErrorNotificationSent;
+
 
 protected:
 

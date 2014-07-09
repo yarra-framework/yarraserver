@@ -271,7 +271,7 @@ bool ysProcess::executeCommand()
 
     QTimer timeoutTimer;
     timeoutTimer.setSingleShot(true);
-    timeoutTimer.setInterval(YS_EXEC_TIMEOUT); // TODO: Make configurable
+    timeoutTimer.setInterval(YSRA->staticConfig.processTimeout);
 
     memcheckTimer=new QTimer();
     memcheckTimer->setSingleShot(false);
@@ -292,8 +292,6 @@ bool ysProcess::executeCommand()
     connect(&process, SIGNAL(readyReadStandardOutput()), this, SLOT(logOutput()));
     connect(&timeoutTimer, SIGNAL(timeout()), &q, SLOT(quit()));
     connect(memcheckTimer, SIGNAL(timeout()), this, SLOT(checkMemory()));
-
-    // TODO: Add timer event to monitor halt request
 
     // Time measurement to diagnose RaidTool calling problems
     QTime ti;
@@ -481,4 +479,12 @@ void ysProcess::checkMemory()
     memcheckTimer->start();
 }
 
+
+void ysProcess::haltAnyProcess()
+{
+    if (process.state()==QProcess::Running)
+    {
+        process.kill();
+    }
+}
 

@@ -27,6 +27,8 @@ public:
     int    driveSpaceNeededGB;
     int    driveSpaceNotificationThresholdGB;
 
+    int processTimeout;
+
     bool readConfiguration();
 
     QString execPath;

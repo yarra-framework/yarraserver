@@ -58,6 +58,40 @@ It is advised to immediately resolve this situation to avoid possible processing
 }
 
 
+void ysNotificationMail::sendDiskErrorNotification(QString dirs)
+{
+    if (YSRA->staticConfig.notificationErrorMail != "")
+    {
+        receivers = YSRA->staticConfig.notificationErrorMail;
+    }
+    else
+    {
+        return;
+    }
+
+    subject="Yarra: Out of diskspace";
+
+    body="<div style=\"color: #000; font-family: Arial, Helvetica, sans-serif;\">\n\
+<p><b>Important: </b>The following server is <b>out of diskspace</b>:</p>\n\
+<p><table border=\"0\" style=\"background-color: #EEE; border: 1px solid #000; padding-left: 6px; padding-right: 6px; border-left: 6px solid #CC0000; margin-top: 10px;\">\n\
+<tr><td style=\"padding-right: 20px;\">Server name:</td><td><b>%prm1%</b></td></tr>\n\
+<tr><td style=\"padding-right: 20px;\">Server type:</td><td>%prm2%</td></tr>\n\
+<tr><td style=\"padding-right: 20px;\">Affected directories:</td><td>%prm3%</td></tr>\n\
+</table>&nbsp;<br />\n\
+Cases will not be processed until sufficient diskspace becomes available.</p>\n\
+</div>\n";
+
+    body.replace("%prm1%", YSRA->staticConfig.serverName);
+    body.replace("%prm2%", YSRA->staticConfig.serverType);
+
+    QString frmtDir=dirs;
+    frmtDir.replace("; ","<br />");
+    body.replace("%prm3%", frmtDir);
+
+    sendMail(true);
+}
+
+
 void ysNotificationMail::sendSuccessNotification(ysJob* job)
 {
     receivers=job->emailNotification;

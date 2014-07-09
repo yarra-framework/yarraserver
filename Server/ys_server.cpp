@@ -107,8 +107,6 @@ bool ysServer::runLoop()
     queue.checkAndSendDiskSpaceNotification();
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
-    // TODO: Add monitor for remaining disk space and send notification mail
-
     while (!shutdownRequested)
     {
         if (queue.isTaskAvailable())
@@ -242,5 +240,6 @@ void ysServer::forceHalt()
 {
     haltRequested=true;
     shutdownRequested=true;
+    processor.haltAnyProcess();
 }
 

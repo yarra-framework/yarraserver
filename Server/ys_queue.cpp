@@ -36,6 +36,9 @@ bool ysQueue::prepare()
     lastDiskSpaceNotification=QDateTime::currentDateTime();
     diskSpaceNotificationSent=false;
 
+    lastDiskErrorNotification=QDateTime::currentDateTime();
+    diskErrorNotificationSent=false;
+
     return true;
 }
 
@@ -368,13 +371,46 @@ void ysQueue::checkAndSendDiskSpaceNotification()
 
 bool ysQueue::isRequiredDiskSpaceAvailble()
 {
-    // TODO: Check the following dirs: workdir, faildir, storagepath
+    int errorThreshold=YSRA->staticConfig.driveSpaceNeededGB;
+
+    bool triggerError=false;
+    QString affectedDirs="";
+
+    // Check the following dirs: workdir, faildir, storagepath
+    if (getAvailSpaceGB(YSRA->staticConfig.workPath)<errorThreshold)
+    {
+        triggerError=true;
+        affectedDirs += YSRA->staticConfig.workPath + "; ";
+    }
+
+    if (getAvailSpaceGB(YSRA->staticConfig.failPath)<errorThreshold)
+    {
+        triggerError=true;
+        affectedDirs += YSRA->staticConfig.workPath + "; ";
+    }
+
+    if (getAvailSpaceGB(YSRA->staticConfig.storagePath)<errorThreshold)
+    {
+        triggerError=true;
+        affectedDirs += YSRA->staticConfig.storagePath + "; ";
+    }
+
+    // Send error notification to the admin, but not more often
+    // than once every 4 hours
+    int errorNotificationInterval=60*60*4;
+
+    if ((triggerError) &&
+        ((diskErrorNotificationSent==false) || (lastDiskErrorNotification.secsTo(QDateTime::currentDateTime())>errorNotificationInterval)))
+    {
+        YS_SYSLOG_OUT("Error: Insufficient diskspace to process case.");
+        YS_SYSLOG("The following directories are affected:\n" + affectedDirs);
+
+        YSRA->notification.sendDiskErrorNotification(affectedDirs);
+        lastDiskErrorNotification=QDateTime::currentDateTime();
+        diskErrorNotificationSent=true;
+    }
 
     // Return false if in any of the folders is less space free than the
     // configured space limit
-
-    // TODO: Send error notification to the admin, but not more often
-    //       than once an hour
-
-    return true;
+    return (!triggerError);
 }
