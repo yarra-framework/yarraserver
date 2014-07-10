@@ -223,6 +223,12 @@ QString ysMode::parseString(QString input, QString postprocIn, QString postprocO
         input.replace(YS_MODEMACRO_MODE_FILE,replacement);
     }
 
+    if (input.contains(YS_MODEMACRO_MODE_CONFIG))
+    {
+        QString replacement=YSRA->staticConfig.modesPath+"/"+currentJob->reconMode+YS_MODE_EXTENSION;
+        input.replace(YS_MODEMACRO_MODE_CONFIG,replacement);
+    }
+
     if (input.contains(YS_MODEMACRO_VALUE_ACC))
     {
         QString replacement=currentJob->accNumber;

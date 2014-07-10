@@ -68,6 +68,7 @@
 
 #define YS_MODEMACRO_MODE_PATH            "%md"
 #define YS_MODEMACRO_MODE_FILE            "%mf"
+#define YS_MODEMACRO_MODE_CONFIG          "%mc"
 
 #define YS_MODEMACRO_VALUE_ACC            "%vacc"
 #define YS_MODEMACRO_VALUE_TASKID         "%vtid"

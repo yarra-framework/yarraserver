@@ -376,7 +376,16 @@ bool ysProcess::executeCommand()
     }
     if (process.exitStatus()==QProcess::NormalExit)
     {
-        YS_TASKLOG("The process exited normally with code " + QString::number(process.exitCode()));
+        if (process.exitCode()!=0)
+        {
+            execResult=false;
+            YS_TASKLOG("ERROR: The process exited normally, but reported an error (code " + QString::number(process.exitCode()) + ").");
+            YSRA->currentJob->setErrorReason("Error reported by module");
+        }
+        else
+        {
+            YS_TASKLOG("The process exited normally.");
+        }
     }
 
     if (YSRA->haltRequested)
