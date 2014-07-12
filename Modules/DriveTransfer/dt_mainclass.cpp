@@ -10,20 +10,22 @@ using namespace std;
 #define DT_MODE_ID    QString("DriveTransfer")
 
 
-ptMainClass::ptMainClass(QObject *parent) :
+dtMainClass::dtMainClass(QObject *parent) :
     QObject(parent)
 {
     returnValue=0;
-    process.setProcessChannelMode(QProcess::MergedChannels);
+    sourcePath="";
+    targetPath="";
+    taskName="Unkown";
 }
 
 
-void ptMainClass::run()
+void dtMainClass::run()
 {
     args=QCoreApplication::arguments();
 
     OUT("");
-    if (args.count()!=3)
+    if (args.count()!=4)
     {
        printUsage();
        returnValue=1;
@@ -38,94 +40,86 @@ void ptMainClass::run()
 }
 
 
-void dtMainClass::readOutput()
-{
-    // TODO: Search output for error messages from storescu
-    while (process.canReadLine())
-    {
-        cout << QString(process.readLine()).toStdString();
-    }
-}
-
-
 void dtMainClass::printUsage()
 {
-    OUT("PACSTransfer for YarraServer - " + PT_VER);
-    OUT("-----------------------------------\n");
-    OUT("Usage:   PACSTransfer [mode file] [directory with DICOMs]\n");
-    OUT("Purpose: Sends reconstructed DICOM images to one or more PACS servers.");
-    OUT("         Requires installation of the OFFIS dcmtk package.");
+    OUT("DriveTransfer for YarraServer - " + DT_VER);
+    OUT("------------------------------------\n");
+    OUT("Usage:   DriveTransfer [mode file] [directory with DICOMs] [unique task name]\n");
+    OUT("Purpose: Copies reconstructed DICOM images into a local or mounted directory.");
 }
 
 
-void ptMainClass::processTransfer()
+void dtMainClass::processTransfer()
 {
     if (readConfig())
     {
-        QDir inputDir(args.at(2));
+        QDir inputDir(sourcePath);
         QStringList allFiles=inputDir.entryList(QDir::Files);
-        OUT(QString::number(allFiles.count()) + " files found for DICOM transfer.");
-        OUT("");
+        OUT(QString::number(allFiles.count()) + " files found for transfer.");
 
-        for (int i=0; i<cfg_count; i++)
+        for (int i=0; i<allFiles.count(); i++)
         {
-            OUT("Starting transfer to PACS "+QString::number(i+1));
-            QString callCmd="storescu --timeout 20 +sd -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
-            callCmd+=args.at(2)+"/";
-
-            OUT("Command: "+callCmd);
-            runCommand(callCmd);
-            OUT("");
+            QString filename=allFiles.at(i);
+            if (!QFile::copy(sourcePath+"/"+filename,targetDir.filePath(filename)))
+            {
+                OUT("ERROR: Cannot copy file " +QString(sourcePath+"/"+filename)+ " to " + targetDir.filePath(filename));
+                returnValue=1;
+                break;
+            }
         }
-        OUT("Finished sending DICOMs.")
-    }
-}
-
-
-bool ptMainClass::readConfig()
-{
-    cfg_count=0;
-    QString modeFilePath=args.at(1);
-
-    {
-        QSettings settings(modeFilePath, QSettings::IniFormat);
-
-        // First, check for settings without number index
-        if (settings.value(PT_MODE_ID+"/AEC", "").toString()!="")
-        {
-            cfg_count=1;
-            cfg_AEC.append ( settings.value(PT_MODE_ID+"/AEC" , "YARRA")   .toString() );
-            cfg_AET.append ( settings.value(PT_MODE_ID+"/AET" , "STORESCU").toString() );
-            cfg_IP.append  ( settings.value(PT_MODE_ID+"/IP"  , "")        .toString() );
-            cfg_port.append( settings.value(PT_MODE_ID+"/Port", "")        .toString() );
-        }
-
-        // Now, read settings with a number index.
-        while ((cfg_count<20) && (settings.value(PT_MODE_ID+"/AEC_" +QString::number(cfg_count+1), "").toString()!=""))
-        {
-            cfg_count++;
-            cfg_AEC.append ( settings.value(PT_MODE_ID+"/AEC_" +QString::number(cfg_count), "YARRA")   .toString() );
-            cfg_AET.append ( settings.value(PT_MODE_ID+"/AET_" +QString::number(cfg_count), "STORESCU").toString() );
-            cfg_IP.append  ( settings.value(PT_MODE_ID+"/IP_"  +QString::number(cfg_count), "")        .toString() );
-            cfg_port.append( settings.value(PT_MODE_ID+"/Port_"+QString::number(cfg_count), "")        .toString() );
-        }
-    }
-
-
-    if (cfg_count==0)
-    {
-        OUT("ERROR: No PACS configuration has been found.");
-        returnValue=1;
-        return false;
+        OUT("Finished transferring.");
     }
     else
     {
-        OUT("Sending data to " + QString::number(cfg_count) + " PACS server(s).");
-        return true;
+        returnValue=1;
     }
 }
 
 
+bool dtMainClass::readConfig()
+{
+    QString modeFilePath=args.at(1);
+    taskName=args.at(3);
+    sourcePath=args.at(2);
 
+    {
+        QSettings settings(modeFilePath, QSettings::IniFormat);
+        targetPath=settings.value(DT_MODE_ID+"/TargetPath", "").toString();
+    }
+
+    if (targetPath=="")
+    {
+        OUT("ERROR: No DriverTransfer configuration has been found.");
+        return false;
+    }
+
+    if (!targetDir.cd(targetPath))
+    {
+        OUT("ERROR: Cannot access target path " + targetPath);
+        return false;
+    }
+
+    // Check if task directory already exsists in the storage path
+    if (targetDir.exists(taskName))
+    {
+        OUT("ERROR: Folder already exsists in target path " + targetDir.filePath(taskName));
+        return false;
+    }
+
+    if (!targetDir.mkdir(taskName))
+    {
+        OUT("ERROR: Folder already exsists in target path " + targetDir.filePath(taskName));
+        return false;
+    }
+
+    if (!targetDir.cd(taskName))
+    {
+        OUT("ERROR: Cannot enter created target path " + targetDir.filePath(taskName));
+        return false;
+    }
+
+    OUT("Moving data to path " + targetPath);
+    return true;
+}
 
 

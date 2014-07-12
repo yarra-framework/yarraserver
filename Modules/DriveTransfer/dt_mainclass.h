@@ -18,7 +18,14 @@ public:
     QProcess process;
     QStringList args;
 
+    QString sourcePath;
+    QString targetPath;
+    QDir targetDir;
+
+    QString taskName;
+
     int returnValue;
+
 
 signals:
     void finished();

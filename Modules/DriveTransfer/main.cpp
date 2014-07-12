@@ -7,7 +7,7 @@
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
-    ptMainClass instance;
+    dtMainClass instance;
 
     // Connect the application signals
     QObject::connect(&instance, SIGNAL(finished()),
