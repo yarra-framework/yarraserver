@@ -18,6 +18,7 @@ public:
     QString accNumber;
     QString patientName;
     QString protocolName;
+    QString paramValue;
 
     QString reconMode;
     QString reconReadableName;

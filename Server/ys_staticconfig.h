@@ -16,6 +16,8 @@ public:
     QString failPath;
     QString storagePath;
 
+    QString modulesPath;
+
     QString serverName;
     QString serverType;
 

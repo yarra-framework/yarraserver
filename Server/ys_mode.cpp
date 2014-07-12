@@ -209,6 +209,12 @@ QString ysMode::parseString(QString input, QString postprocIn, QString postprocO
     {
         QString replacement=postprocOut;
         input.replace(YS_MODEMACRO_POSTPROC_OUTPUTPATH,replacement);
+    }    
+
+    if (input.contains(YS_MODEMACRO_MODULES_PATH))
+    {
+        QString replacement=YSRA->staticConfig.modulesPath;
+        input.replace(YS_MODEMACRO_MODULES_PATH,replacement);
     }
 
     if (input.contains(YS_MODEMACRO_MODE_PATH))
@@ -238,6 +244,17 @@ QString ysMode::parseString(QString input, QString postprocIn, QString postprocO
         }
 
         input.replace(YS_MODEMACRO_VALUE_ACC,replacement);
+    }
+
+    if (input.contains(YS_MODEMACRO_VALUE_PARAM))
+    {
+        QString replacement=currentJob->paramValue;
+        if (replacement=="")
+        {
+            replacement="N";
+        }
+
+        input.replace(YS_MODEMACRO_VALUE_PARAM,replacement);
     }
 
     if (input.contains(YS_MODEMACRO_VALUE_TASKID))

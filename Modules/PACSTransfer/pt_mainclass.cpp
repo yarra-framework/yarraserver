@@ -17,6 +17,7 @@ ptMainClass::ptMainClass(QObject *parent) :
 {
     returnValue=0;
     process.setProcessChannelMode(QProcess::MergedChannels);
+    storescuError=false;
 }
 
 
@@ -116,9 +117,25 @@ bool ptMainClass::runCommand(QString cmd)
                 returnValue=1;
             }
         }
-    }
+    }     
 
     readOutput();
+
+    if (process.exitStatus()==QProcess::CrashExit)
+    {
+        OUT("ERROR: The storescu process crashed.");
+        execResult=false;
+        returnValue=1;
+    }
+    if (process.exitStatus()==QProcess::NormalExit)
+    {
+        if (process.exitCode()!=0)
+        {
+            OUT("ERROR: storescu returned an error.");
+            storescuError=true;
+            returnValue=1;
+        }
+    }
 
     // Notify the user if the mysterious eventloop problem occured
     if (eventloopProblem)
@@ -135,7 +152,8 @@ void ptMainClass::readOutput()
     // TODO: Search output for error messages from storescu
     while (process.canReadLine())
     {
-        cout << QString(process.readLine()).toStdString();
+        QString line(process.readLine());
+        cout << line.toStdString();
     }
 }
 
@@ -169,7 +187,16 @@ void ptMainClass::processTransfer()
             runCommand(callCmd);
             OUT("");
         }
-        OUT("Finished sending DICOMs.")
+
+        if (storescuError)
+        {
+            OUT("ERROR: PACS transfer was not successful.");
+            returnValue=1;
+        }
+        else
+        {
+            OUT("Finished sending DICOMs.");
+        }
     }
 }
 

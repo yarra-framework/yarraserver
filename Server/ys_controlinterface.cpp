@@ -67,10 +67,7 @@ bool ysControlInterface::prepare()
 
         moveToThread(&myThread);
         ipcServer.moveToThread(&myThread);
-        testTimer.moveToThread(&myThread);
     }
-
-    //testTimer.singleShot(1000, this, SLOT(requestServerShutdown()));
 
     return !ipcError;
 }

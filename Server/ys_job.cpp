@@ -14,6 +14,7 @@ ysJob::ysJob()
     accNumber="";
     patientName="Unknown";
     protocolName="Unknown";
+    paramValue="N";
 
     reconMode="";
     systemName="Unknown";
@@ -26,6 +27,10 @@ ysJob::ysJob()
     storeProcessedFile=false;
     durationSec=0;
     duration="none";
+
+    submissionTime=QDateTime::currentDateTime();
+    processingStart=submissionTime;
+    processingEnd=submissionTime;
 
     errorReason="Unknown - Refer to log file";
 }
@@ -61,6 +66,7 @@ bool ysJob::readTaskFile(QString filename)
         reconMode=taskSettings.value("Task/ReconMode", "!!FAIL").toString();
         accNumber=taskSettings.value("Task/ACC", "").toString();
         emailNotification=taskSettings.value("Task/EMailNotification", "").toString();
+        paramValue=taskSettings.value("Task/ParamValue", "N").toString();
 
         patientName=taskSettings.value("Task/PatientName", "Unknown").toString();
         protocolName=taskSettings.value("Task/ScanProtocol", "Unknown").toString();
@@ -69,8 +75,8 @@ bool ysJob::readTaskFile(QString filename)
 
         submittedScanFileSize=taskSettings.value("Information/ScanFileSize", 0).toLongLong();
 
-        QDate submDate=QDate::fromString(taskSettings.value("Information/TaskDate", QDate::currentDate().toString()).toString());
-        QTime submTime=QTime::fromString(taskSettings.value("Information/TaskTime", QTime::currentTime().toString()).toString());
+        QDate submDate=QDate::fromString(taskSettings.value("Information/TaskDate", QDate::currentDate().toString(Qt::ISODate)).toString(),Qt::ISODate);
+        QTime submTime=QTime::fromString(taskSettings.value("Information/TaskTime", QTime::currentTime().toString(Qt::ISODate)).toString(),Qt::ISODate);
         submissionTime=QDateTime(submDate,submTime);
 
         adjustmentFiles.clear();
@@ -144,9 +150,10 @@ void ysJob::logJobInformation()
     YS_TASKLOG("ReconMode:    " + reconMode + " ("+ reconReadableName +")");
     YS_TASKLOG("Patient:      " + patientName);
     YS_TASKLOG("ACC:          " + accNumber);
+    YS_TASKLOG("ParamValue:   " + paramValue);
     YS_TASKLOG("Protocol:     " + protocolName);
     YS_TASKLOG("System:       " + systemName);
-    YS_TASKLOG("Submission:   " + submissionTime.toString());
+    YS_TASKLOG("Submission:   " + submissionTime.toString("dd.MM.yyyy hh:mm:ss"));
     YS_TASKLOG("Notification: " + emailNotification);
 
     QString adjFileList="none";

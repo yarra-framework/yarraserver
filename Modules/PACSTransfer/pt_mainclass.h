@@ -28,6 +28,7 @@ public:
     QStringList cfg_port;
 
     int cfg_count;
+    bool storescuError;
 
 signals:
     void finished();

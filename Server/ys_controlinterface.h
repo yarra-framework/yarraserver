@@ -19,7 +19,6 @@ public:
     void finish();
 
     QLocalServer ipcServer;
-    QTimer testTimer;
 
     void processTestRequest(QLocalSocket* socket);
     void processShutdownRequest(QLocalSocket* socket);

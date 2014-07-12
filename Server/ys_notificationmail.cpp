@@ -114,7 +114,8 @@ void ysNotificationMail::sendSuccessNotification(ysJob* job)
     body.replace("%prm2%", job->accNumber);
     body.replace("%prm3%", job->reconReadableName);
     body.replace("%prm4%", job->systemName);
-    body.replace("%prm5%", job->submissionTime.toString());
+    QString timeString=job->submissionTime.toString("dd.MM.yyyy hh:mm:ss");
+    body.replace("%prm5%", timeString);
     body.replace("%prm6%", YSRA->staticConfig.serverName);
     body.replace("%prm7%", job->duration);
 
@@ -131,7 +132,7 @@ void ysNotificationMail::sendErrorNotification(ysJob* job)
     receivers=job->emailNotification;
 
     // Append the general error receiver to the list of receivers
-    if (YSRA->staticConfig.notificationErrorMail != "")
+    if (YSRA->staticConfig.notificationErrorMail.length()>0)
     {
         // Add comma only if there are any other receivers
         if (receivers.length()>0)
@@ -161,7 +162,9 @@ Detailed failure information can be found in the attached log file.</p>\n\
     body.replace("%prm2%", job->accNumber);
     body.replace("%prm3%", job->reconReadableName);
     body.replace("%prm4%", job->systemName);
-    body.replace("%prm5%", job->submissionTime.toString());
+
+    QString timeString=job->submissionTime.toString("dd.MM.yyyy hh:mm:ss");
+    body.replace("%prm5%", timeString);
     body.replace("%prm6%", job->errorReason);
     body.replace("%prm7%", YSRA->staticConfig.serverName);
 
@@ -209,8 +212,7 @@ void ysNotificationMail::sendMail(bool highPriority, QString attachFilename)
     header.append("Content-Type: text/html; charset=ISO-8859-1\n");
     header.append("\n");
 
-    QProcess *process_mail;
-    process_mail = new QProcess();
+    QProcess *process_mail=new QProcess();
     process_mail->start("sendmail -t");
     process_mail->waitForStarted();
 
@@ -245,4 +247,5 @@ void ysNotificationMail::sendMail(bool highPriority, QString attachFilename)
     process_mail->write(QString(".\n").toLatin1());
     //process_mail->closeWriteChannel();
     process_mail->waitForFinished();
+    YS_FREE(process_mail);
 }

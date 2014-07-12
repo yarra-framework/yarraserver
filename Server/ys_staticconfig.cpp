@@ -19,6 +19,8 @@ ysStaticConfig::ysStaticConfig()
     failPath=execPath+"/fail";
     storagePath=execPath+"/finished";
 
+    modulesPath=execPath+"/modules";
+
     notificationEnabled=false;
     notificationErrorMail="";
     notificationFromAddress="YarraServer <noreply@localhost>";
@@ -53,6 +55,7 @@ bool ysStaticConfig::readConfiguration()
         workPath   =configFile.value("Paths/Work",    workPath).toString();
         failPath   =configFile.value("Paths/Fail",    failPath).toString();
         storagePath=configFile.value("Paths/Storage", storagePath).toString();
+        modulesPath=configFile.value("Paths/Modules", modulesPath).toString();
 
         notificationEnabled    =configFile.value("Notification/Enabled",     notificationEnabled).toBool();
         notificationErrorMail  =configFile.value("Notification/ErrorMail",   notificationErrorMail).toString();

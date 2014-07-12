@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
     // This code will start the messaging engine in QT and in
     // 10ms it will start the execution in the MainClass.run routine;
-    QTimer::singleShot(10, &instance, SLOT(run()));
+    QTimer::singleShot(0, &instance, SLOT(run()));
 
     int result=app.exec();
 

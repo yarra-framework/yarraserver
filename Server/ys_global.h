@@ -65,12 +65,14 @@
 
 #define YS_MODEMACRO_TRANSFER_PATH        "%td"
 #define YS_MODEMACRO_TEMPPATH             "%tmp"
+#define YS_MODEMACRO_MODULES_PATH         "%bd"
 
 #define YS_MODEMACRO_MODE_PATH            "%md"
 #define YS_MODEMACRO_MODE_FILE            "%mf"
 #define YS_MODEMACRO_MODE_CONFIG          "%mc"
 
 #define YS_MODEMACRO_VALUE_ACC            "%vacc"
+#define YS_MODEMACRO_VALUE_PARAM          "%vparam"
 #define YS_MODEMACRO_VALUE_TASKID         "%vtid"
 #define YS_MODEMACRO_VALUE_UNIQUETASKID   "%vuid"
 
