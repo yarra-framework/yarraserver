@@ -1,5 +1,5 @@
-#ifndef PT_MAINCLASS_H
-#define PT_MAINCLASS_H
+#ifndef DT_MAINCLASS_H
+#define DT_MAINCLASS_H
 
 #include <QtCore>
 
@@ -15,7 +15,6 @@ public:
 
     bool readConfig();
 
-    QProcess process;
     QStringList args;
 
     QString sourcePath;
@@ -35,4 +34,4 @@ public slots:
 
 };
 
-#endif // PT_MAINCLASS_H
+#endif // DT_MAINCLASS_H
