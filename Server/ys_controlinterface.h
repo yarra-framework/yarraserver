@@ -23,6 +23,7 @@ public:
     void processTestRequest(QLocalSocket* socket);
     void processShutdownRequest(QLocalSocket* socket);
     void processHaltRequest(QLocalSocket* socket);
+    void processLogRequest(QLocalSocket* socket);
 
     void writeToSocket(QString string, QLocalSocket* socket);
 

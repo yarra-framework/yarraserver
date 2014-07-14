@@ -105,6 +105,10 @@ void ysControlInterface::receiveRequest()
             processHaltRequest(clientConnection);
             break;
 
+        case YS_CTRL_STATUS:
+            processLogRequest(clientConnection);
+            break;
+
         case YS_CTRL_INVALID:
         default:
             YS_OUT("WARNING: Invalid IPC request.")
@@ -139,6 +143,12 @@ void ysControlInterface::processHaltRequest(QLocalSocket* socket)
 {
     writeToSocket(YS_CTRL_ACK, socket);
     parent->forceHalt();
+}
+
+
+void ysControlInterface::processLogRequest(QLocalSocket* socket)
+{
+    writeToSocket(parent->status, socket);
 }
 
 

@@ -149,7 +149,6 @@ bool ptMainClass::runCommand(QString cmd)
 
 void ptMainClass::readOutput()
 {
-    // TODO: Search output for error messages from storescu
     while (process.canReadLine())
     {
         QString line(process.readLine());

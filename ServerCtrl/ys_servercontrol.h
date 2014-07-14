@@ -17,7 +17,9 @@ public:
         MODE_TEST,
         MODE_SHUTDOWN,
         MODE_HALT,
-        MODE_LAUNCH
+        MODE_STATUS,
+        MODE_LAUNCH,
+        MODE_SHOWLOG
     };
 
     explicit ysServerControl(QObject *parent = 0);
@@ -37,6 +39,9 @@ public slots:
     void onSocketError(QLocalSocket::LocalSocketError socketError);
     void readResponse();
 
+    void displayLog(QString logFile);
+    void readLogOutput();
+
 protected:
     void printUsage();
 
@@ -46,6 +51,7 @@ protected:
 
     quint16 responseSize;
 
+    QProcess process;
 };
 
 

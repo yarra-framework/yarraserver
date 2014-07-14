@@ -32,6 +32,7 @@ public:
     int processTimeout;
 
     bool readConfiguration();
+    bool checkDirectories();
 
     QString execPath;
 

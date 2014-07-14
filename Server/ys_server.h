@@ -48,6 +48,8 @@ public:
     ysJob*             currentJob;
     ysNotificationMail notification;
 
+    QString            status;
+
     bool shutdownRequested;
     bool haltRequested;
 };

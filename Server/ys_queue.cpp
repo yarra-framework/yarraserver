@@ -39,7 +39,32 @@ bool ysQueue::prepare()
     lastDiskErrorNotification=QDateTime::currentDateTime();
     diskErrorNotificationSent=false;
 
+    if (QFile::exists(YSRA->staticConfig.inqueuePath+"/"+YS_HALT_FILE))
+    {
+        if (!QFile::remove(YSRA->staticConfig.inqueuePath+"/"+YS_HALT_FILE))
+        {
+            YS_SYSLOG_OUT("ERROR: Unable to remove HALT file from queue directory.");
+        }
+    }
+
     return true;
+}
+
+
+void ysQueue::createServerHaltFile()
+{
+    QFile haltFile(YSRA->staticConfig.inqueuePath+"/"+YS_HALT_FILE);
+    if (!haltFile.open(QIODevice::ReadWrite | QIODevice::Text))
+    {
+        YS_SYSLOG_OUT("ERROR: Unable to create HALT file in queue directory.");
+    }
+    else
+    {
+        QString fileContent="HALT";
+        haltFile.write(fileContent.toLatin1());
+        haltFile.flush();
+    }
+    haltFile.close();
 }
 
 

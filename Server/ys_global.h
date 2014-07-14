@@ -16,6 +16,7 @@
 #define YS_TASK_EXTENSION_PRIO "_prio"
 #define YS_LOCK_EXTENSION      ".lock"
 #define YS_LOG_SERVER          "yarra.log"
+#define YS_HALT_FILE           "HALT"
 
 #define YS_WORKDIR_TMP         "temp"
 #define YS_WORKDIR_RECON       "recon"
@@ -26,7 +27,6 @@
 #define YS_EXEC_MEMCHECK       1000
 
 #define YS_WAITMESSAGE         "Waiting for next task..."
-
 #define YS_INI_INVALID         "!!FAIL"
 
 #define YS_PROCCOUNT_MAX       50

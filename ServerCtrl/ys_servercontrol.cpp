@@ -50,6 +50,14 @@ void ysServerControl::run()
         {
             mode=MODE_LAUNCH;
         }
+        if (QCoreApplication::arguments().contains("-d",Qt::CaseInsensitive))
+        {
+            mode=MODE_STATUS;
+        }
+        if (QCoreApplication::arguments().contains("-v",Qt::CaseInsensitive))
+        {
+            mode=MODE_SHOWLOG;
+        }
         if (QCoreApplication::arguments().contains("--p",Qt::CaseInsensitive))
         {
             parserFormat=true;
@@ -122,6 +130,8 @@ void ysServerControl::printUsage()
     YS_OUT("  -s   Shutdown server after current reconstruction job.");
     YS_OUT("  -h   Stop server immediately. Current job will be killed.");
     YS_OUT("  -t   Test if server is active and responding.");
+    YS_OUT("  -d   Show the current status of the server.");
+    YS_OUT("  -v   Display the output of the active task.");
     YS_OUT("  -u   Print this usage information.");
     YS_OUT("");
     YS_OUT("Options:");
@@ -147,6 +157,11 @@ void ysServerControl::onConnected()
     case MODE_HALT:
         cmd=YS_CTRL_HALT;
         break;
+    case MODE_STATUS:
+    case MODE_SHOWLOG:
+        cmd=YS_CTRL_STATUS;
+        break;
+
     default:
         YS_OUT("ERROR: Invalid mode selcted.");
         break;
@@ -241,7 +256,6 @@ void ysServerControl::readResponse()
             incorrectAnswer=true;
         }
         break;
-
     case MODE_HALT:
         if (response==YS_CTRL_ACK)
         {
@@ -252,6 +266,29 @@ void ysServerControl::readResponse()
             incorrectAnswer=true;
         }
         break;
+    case MODE_STATUS:
+        if (response==YS_CTRL_IDLE)
+        {
+            output("Server is idle.", YS_CTRL_IDLE);
+        }
+        else
+        {
+            output(response, response);
+        }
+        break;
+
+    case MODE_SHOWLOG:
+        if (response==YS_CTRL_IDLE)
+        {
+            output("Server is idle.", YS_CTRL_IDLE);
+        }
+        else
+        {
+            socket.disconnectFromServer();
+            displayLog(response);
+        }
+        break;
+
 
     default:
         break;
@@ -267,4 +304,36 @@ void ysServerControl::readResponse()
 }
 
 
+void ysServerControl::displayLog(QString logFile)
+{
+    bool execResult=true;
 
+    QEventLoop q;
+    connect(&process, SIGNAL(finished(int , QProcess::ExitStatus)), &q, SLOT(quit()));
+    connect(&process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));
+    connect(&process, SIGNAL(readyReadStandardOutput()), this, SLOT(readLogOutput()));
+
+    // Start the process. Note: The commandline and arguments need to be defined before.
+    QString cmd="tail -f "+logFile;
+    process.start(cmd);
+
+    if (process.state()==QProcess::NotRunning)
+    {
+        YS_OUT("ERROR: Cannot launch tail command.");
+    }
+    else
+    {
+        q.exec();
+    }
+    readLogOutput();
+}
+
+
+void ysServerControl::readLogOutput()
+{
+    while (process.canReadLine())
+    {
+        QString line(process.readLine());
+        std::cout << QString(line).toStdString();
+    }
+}

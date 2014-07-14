@@ -70,3 +70,31 @@ bool ysStaticConfig::readConfiguration()
     return true;
 }
 
+
+bool ysStaticConfig::checkDirectories()
+{
+    bool dirError=false;
+    QString affectedDirectories="";
+
+    if (!QFile::exists(modesPath))   { dirError=true; affectedDirectories+=modesPath  +" "; }
+    if (!QFile::exists(logPath))     { dirError=true; affectedDirectories+=logPath    +" "; }
+    if (!QFile::exists(inqueuePath)) { dirError=true; affectedDirectories+=inqueuePath+" "; }
+    if (!QFile::exists(workPath))    { dirError=true; affectedDirectories+=workPath   +" "; }
+    if (!QFile::exists(failPath))    { dirError=true; affectedDirectories+=failPath   +" "; }
+    if (!QFile::exists(storagePath)) { dirError=true; affectedDirectories+=storagePath+" "; }
+    if (!QFile::exists(modulesPath)) { dirError=true; affectedDirectories+=modulesPath+" "; }
+
+    if (dirError)
+    {
+        YS_OUT("ERROR: Could not access all required directories. Check configuration.");
+        YS_OUT("ERROR: The following directories are affected \n" + affectedDirectories);
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+
+

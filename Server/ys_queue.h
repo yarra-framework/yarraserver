@@ -34,6 +34,7 @@ public:
     QDateTime lastDiskErrorNotification;
     bool      diskErrorNotificationSent;
 
+    void createServerHaltFile();
 
 protected:
 

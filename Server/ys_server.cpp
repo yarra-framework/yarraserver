@@ -1,7 +1,7 @@
 #include "ys_server.h"
 #include "ys_global.h"
 #include "ys_log.h"
-
+#include "ys_controlapi.h"
 
 
 ysServer::ysServer(QObject *parent) :
@@ -47,6 +47,12 @@ bool ysServer::prepare()
         YS_OUT("ERROR: Reading server configuration failed.");
         YS_OUT("Cannot launch server. Shutting down.");
 
+        return false;
+    }
+
+    // Check if all directories are available
+    if (!staticConfig.checkDirectories())
+    {
         return false;
     }
 
@@ -109,6 +115,8 @@ bool ysServer::runLoop()
 
     while (!shutdownRequested)
     {
+        status=YS_CTRL_IDLE;
+
         if (queue.isTaskAvailable())
         {
             // Read the current configuration of reconstruction modes
@@ -120,6 +128,7 @@ bool ysServer::runLoop()
 
             if (currentJob)
             {
+                status=log.getTaskLogFilename();
                 bool procError=false;
 
                 // Delete all temporary files
@@ -227,6 +236,7 @@ bool ysServer::runLoop()
         safeWait(50);
     }
 
+    queue.createServerHaltFile();
     controlInterface.finish();
 
     YS_SYSLOG_OUT("Server stopped.");
