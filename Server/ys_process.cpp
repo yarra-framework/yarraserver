@@ -373,6 +373,12 @@ bool ysProcess::executeCommand()
         YS_TASKLOG("ERROR: The process crashed.");
         YSRA->currentJob->setErrorReason("Process crashed");
         execResult=false;
+
+        if (YSRA->shutdownRequested)
+        {
+            YS_TASKLOG("NOTE: Shutdown was requested previously.");
+            YS_TASKLOG("NOTE: Possibly the process exceeded the upstart killing timout.");
+        }
     }
     if (process.exitStatus()==QProcess::NormalExit)
     {

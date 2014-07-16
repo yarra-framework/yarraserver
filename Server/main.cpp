@@ -12,7 +12,8 @@ struct ysHaltDetection
     ysHaltDetection()
     {
         signal(SIGINT,   &ysHaltDetection::serverHalt);
-        signal(SIGTERM,  &ysHaltDetection::serverHalt);
+        signal(SIGTERM,  &ysHaltDetection::serverShutdown);
+        signal(SIGURG,   &ysHaltDetection::serverShutdown);
         signal(SIGHUP,   &ysHaltDetection::preventHUP);
         //signal(SIGBREAK, &CleanExit::exitQt);
     }
@@ -22,6 +23,13 @@ struct ysHaltDetection
         YS_OUT(" ## HALT requested");
         instancePtr->forceHalt();
     }
+
+    static void serverShutdown(int)
+    {
+        YS_OUT(" ## STOP requested");
+        instancePtr->setShutdownRequest();
+    }
+
 
     static void preventHUP(int)
     {

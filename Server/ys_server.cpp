@@ -41,6 +41,8 @@ bool ysServer::prepare()
     YS_OUT("YarraServer - Version " + QString(YS_VERSION));
     YS_OUT("==========================");
     YS_OUT("");
+    YS_OUT("Build: " + QString(__DATE__) + " " + QString(__TIME__));
+    YS_OUT("");
 
     if (!staticConfig.readConfiguration())
     {
@@ -235,6 +237,7 @@ bool ysServer::runLoop()
         // Sleep for 50ms to prevent excessive CPU usage during idle times
         safeWait(50);
     }
+    YS_SYSLOG_OUT("Shutdown requested. Server going down.");
 
     queue.createServerHaltFile();
     controlInterface.finish();
