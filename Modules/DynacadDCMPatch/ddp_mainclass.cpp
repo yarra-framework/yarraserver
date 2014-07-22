@@ -9,8 +9,9 @@ using namespace std;
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 #define EXEC_TIMEOUT  21600000
-#define DDP_MODE_ID    QString("DynacadDCMPatch")
+#define DDP_MODE_ID   QString("DynacadDCMPatch")
 
+#define DCMS_PER_CALL 100
 
 ddpMainClass::ddpMainClass(QObject *parent) :
     QObject(parent)
@@ -186,7 +187,7 @@ void ddpMainClass::processPostProc()
         return;
     }
 
-    QStringList allFiles=inputDir.entryList(QDir::Files);
+    QStringList allFiles=inputDir.entryList(QDir::Files, QDir::Name);
     OUT(QString::number(allFiles.count()) + " files found for DICOM patching.");
 
     if (allFiles.count()==0)
@@ -214,11 +215,22 @@ void ddpMainClass::processPostProc()
     }
     else
     {
-        process.setWorkingDirectory(outputPath);
+        process.setWorkingDirectory(outputPath);                      
+        QString callCmd="";
+
         for (int i=0; i<allFiles.count(); i++)
         {
-            QString callCmd="dcmodify -nb -m \"(0018,1000)=12345\" "+outputPath+"/"+allFiles.at(i);
-            runCommand(callCmd);
+            // Combine always 100 DCMs into on call to increase speed
+            if (i % DCMS_PER_CALL==0)
+            {
+                callCmd="dcmodify -nb -m \"(0018,1000)=12345\"";
+            }
+            callCmd.append(" " + allFiles.at(i));
+
+            if ((i % DCMS_PER_CALL==DCMS_PER_CALL-1) || (i==allFiles.count()-1))
+            {
+                runCommand(callCmd);
+            }
         }
 
         if (returnValue==0)

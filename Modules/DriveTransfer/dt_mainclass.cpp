@@ -54,7 +54,7 @@ void dtMainClass::processTransfer()
     if (readConfig())
     {
         QDir inputDir(sourcePath);
-        QStringList allFiles=inputDir.entryList(QDir::Files);
+        QStringList allFiles=inputDir.entryList(QDir::Files, QDir::Name);
         OUT(QString::number(allFiles.count()) + " files found for transfer.");
 
         for (int i=0; i<allFiles.count(); i++)
