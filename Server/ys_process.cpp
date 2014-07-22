@@ -234,7 +234,7 @@ bool ysProcess::prepareOutputDirs()
     {
         QString dirName=YS_WORKDIR_POSTPROC+QString::number(i+1);
         workDir.mkdir(dirName);
-        transferDir=dirName;
+        transferDir=YSRA->staticConfig.workPath + "/" + dirName;
     }
 
     // Set transfer directory
