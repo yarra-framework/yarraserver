@@ -223,7 +223,7 @@ void ddpMainClass::processPostProc()
             // Combine always 100 DCMs into on call to increase speed
             if (i % DCMS_PER_CALL==0)
             {
-                callCmd="dcmodify -nb -m \"(0018,1000)=12345\"";
+                callCmd="dcmodify -nb -m \"(0018,1000)=1\"";
             }
             callCmd.append(" " + allFiles.at(i));
 
