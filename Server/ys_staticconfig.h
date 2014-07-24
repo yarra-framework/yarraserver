@@ -31,10 +31,17 @@ public:
 
     int processTimeout;
 
+    bool useNightTasks;
+    QTime nightStart;
+    QTime nightEnd;
+    bool nightAfterMidnight;
+
     bool readConfiguration();
     bool checkDirectories();
 
     QString execPath;
+
+    bool allowNightReconNow();
 
 };
 

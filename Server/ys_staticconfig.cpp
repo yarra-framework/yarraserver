@@ -30,6 +30,11 @@ ysStaticConfig::ysStaticConfig()
     driveSpaceNotificationThresholdGB=0;
 
     processTimeout=YS_EXEC_TIMEOUT;
+
+    useNightTasks=false;
+    nightStart=QTime(23,0);
+    nightEnd=QTime(5,0);
+    nightAfterMidnight=false;
 }
 
 
@@ -65,6 +70,19 @@ bool ysStaticConfig::readConfiguration()
         memkillThreshold=configFile.value("Options/MemKillThreshold", memkillThreshold).toDouble();
         driveSpaceNeededGB=configFile.value("Options/DriveSpaceNeeded", driveSpaceNeededGB).toInt();
         driveSpaceNotificationThresholdGB=configFile.value("Options/DriveSpaceNotificationThreshold", driveSpaceNotificationThresholdGB).toInt();
+
+        useNightTasks=configFile.value("Options/UseNightTasks", useNightTasks).toBool();
+        nightStart=QTime::fromString(configFile.value("Options/NightStart", nightStart.toString(Qt::ISODate)).toString(),Qt::ISODate);
+        nightEnd=QTime::fromString(configFile.value("Options/NightEnd", nightEnd.toString(Qt::ISODate)).toString(),Qt::ISODate);
+    }
+
+    if (nightStart<nightEnd)
+    {
+        nightAfterMidnight=true;
+    }
+    else
+    {
+        nightAfterMidnight=false;
     }
 
     return true;
@@ -96,5 +114,34 @@ bool ysStaticConfig::checkDirectories()
     }
 }
 
+
+bool ysStaticConfig::allowNightReconNow()
+{
+    // If night time reconstruction is not enabled, always allow
+    // processing of night-time recons
+    if (!useNightTasks)
+    {
+        return true;
+    }
+
+    QTime current=QTime::currentTime();
+
+    if (nightAfterMidnight)
+    {
+        if ((current>nightEnd) || (current<nightStart))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if ((current>nightEnd) && (current<nightStart))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 

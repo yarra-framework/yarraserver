@@ -36,16 +36,28 @@ public:
 
     void createServerHaltFile();
 
+    bool skipNightRecon(QString taskFilename, bool nightTimeReconAllowed);
+    void changeTaskToNight(QString taskFilename);
+
+    bool isTaskFileLocked(QString taskFile);
+    bool lockTask(QString taskFile);
+    bool unlockTask(QString taskFile);
+
 protected:
 
     QDir queueDir;
+    QDir prioqueueDir;
+
+    QStringList fileList;
+    bool isNightTime;
 
     bool moveFiles(QStringList files, QString sourcePath, QString targetPath);
-    bool isTaskFileLocked(QString taskFile);
 
     int getAvailSpaceGB(QString path);
 
+    QString getLockFilename(QString taskFilename);
 
 };
+
 
 #endif // YS_QUEUE_H

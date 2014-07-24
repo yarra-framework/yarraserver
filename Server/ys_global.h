@@ -5,22 +5,23 @@
 #include <QtCore>
 #include "ys_runtimeaccess.h"
 
-#define YS_VERSION          "0.1a"
+#define YS_VERSION          "0.2a"
 #define YS_SLEEP_INTERVAL   10
 #define YS_CI_ID            "YarraServer"
 #define YS_CI_SETUPTIMOUT   1000
 #define YS_CI_FORCECMD      "--force"
 
-#define YS_MODE_EXTENSION      ".mode"
-#define YS_TASK_EXTENSION      ".task"
-#define YS_TASK_EXTENSION_PRIO "_prio"
-#define YS_LOCK_EXTENSION      ".lock"
-#define YS_LOG_SERVER          "yarra.log"
-#define YS_HALT_FILE           "HALT"
+#define YS_MODE_EXTENSION       ".mode"
+#define YS_TASK_EXTENSION       ".task"
+#define YS_TASK_EXTENSION_PRIO  "_prio"
+#define YS_TASK_EXTENSION_NIGHT "_night"
+#define YS_LOCK_EXTENSION       ".lock"
+#define YS_LOG_SERVER           "yarra.log"
+#define YS_HALT_FILE            "HALT"
 
-#define YS_WORKDIR_TMP         "temp"
-#define YS_WORKDIR_RECON       "recon"
-#define YS_WORKDIR_POSTPROC    "postproc"
+#define YS_WORKDIR_TMP          "temp"
+#define YS_WORKDIR_RECON        "recon"
+#define YS_WORKDIR_POSTPROC     "postproc"
 
 #define YS_EXEC_LOOPSLEEP      10
 #define YS_EXEC_TIMEOUT        86400000

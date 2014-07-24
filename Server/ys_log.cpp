@@ -42,8 +42,13 @@ void ysLog::openSysLog()
     }
 
     sysLog("##[START]######################################");
-    sysLog("YarraServer Version " + QString(YS_VERSION));
-    sysLog("Name: " + YSRA->staticConfig.serverName + ", Type: " + YSRA->staticConfig.serverType);
+    sysLog("YarraServer Version " + QString(YS_VERSION)+" (Build: " + QString::fromLatin1(__DATE__) + " " + QString::fromLatin1(__TIME__) +")");
+    sysLog("Name: " + YSRA->staticConfig.serverName + ", Type: " + YSRA->staticConfig.serverType);    
+
+    if (YSRA->staticConfig.useNightTasks)
+    {
+        sysLog("Night time restriction from " + YSRA->staticConfig.nightStart.toString(Qt::ISODate) + " to " + YSRA->staticConfig.nightEnd.toString(Qt::ISODate));
+    }
 }
 
 

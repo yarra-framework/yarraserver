@@ -55,7 +55,6 @@ void ysJob::generateTaskID()
 bool ysJob::readTaskFile(QString filename)
 {
     taskFile=filename;
-
     QString queueDir=YSRA->staticConfig.inqueuePath;
 
     // Scoping for lifetime of QSettings object, as the file might be moved later

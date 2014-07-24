@@ -133,11 +133,13 @@ bool ysServer::runLoop()
                 status=log.getTaskLogFilename();
                 bool procError=false;
 
-                // Delete all temporary files
+                // Delete all temporary files (should be clean, but it case the server
+                // previously crashed)
                 queue.cleanWorkPath();
 
                 // Move all related files to work directory
                 queue.moveTaskToWorkPath(currentJob);
+                queue.unlockTask(currentJob->taskFile);
 
                 // ## Run the individual processing modules
 

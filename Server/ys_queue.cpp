@@ -10,6 +10,8 @@
 ysQueue::ysQueue()
 {
     uniqueID="";
+    isNightTime=true;
+    fileList.clear();
 }
 
 
@@ -26,12 +28,21 @@ bool ysQueue::prepare()
         YS_SYSLOG_OUT("ERROR: Unable to change to queue directory.");
         return false;
     }
+    prioqueueDir=queueDir;
 
+    // Prepare the filter for the normal tasks
     QStringList taskFilter;
     taskFilter <<  QString("*")+QString(YS_TASK_EXTENSION);
     queueDir.setNameFilters(taskFilter);
     queueDir.setFilter(QDir::Files);
     queueDir.setSorting(QDir::Time | QDir::Reversed);
+
+    // Prepare the filter for the priority tasks
+    QStringList priotaskFilter;
+    priotaskFilter <<  QString("*")+QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_PRIO);
+    prioqueueDir.setNameFilters(priotaskFilter);
+    prioqueueDir.setFilter(QDir::Files);
+    prioqueueDir.setSorting(QDir::Time | QDir::Reversed);
 
     lastDiskSpaceNotification=QDateTime::currentDateTime();
     diskSpaceNotificationSent=false;
@@ -39,6 +50,7 @@ bool ysQueue::prepare()
     lastDiskErrorNotification=QDateTime::currentDateTime();
     diskErrorNotificationSent=false;
 
+    // Remove the HALT file to inform other nodes that we are active
     if (QFile::exists(YSRA->staticConfig.inqueuePath+"/"+YS_HALT_FILE))
     {
         if (!QFile::remove(YSRA->staticConfig.inqueuePath+"/"+YS_HALT_FILE))
@@ -70,8 +82,30 @@ void ysQueue::createServerHaltFile()
 
 bool ysQueue::isTaskAvailable()
 {
+    isNightTime=YSRA->staticConfig.allowNightReconNow();
+
+    QStringList taskFilter;
+    if (isNightTime)
+    {
+        // If it's night time (or if the night mode is not enabled), process tasks
+        // with extension ".task" and ".task_night"
+        taskFilter << QString("*")+QString(YS_TASK_EXTENSION) << QString("*")+QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_NIGHT);
+    }
+    else
+    {
+        // During daytime, only process tasks with extension ".task"
+        taskFilter <<  QString("*")+QString(YS_TASK_EXTENSION);
+    }
+    queueDir.setNameFilters(taskFilter);
+
+    prioqueueDir.refresh();
     queueDir.refresh();
-    if (queueDir.entryList().count())
+
+    // First, process then prio recons, afterwards the normal ones
+    QStringList fileList=prioqueueDir.entryList();
+    fileList.append(queueDir.entryList());
+
+    if (fileList.count()>0)
     {
         return true;
     }
@@ -82,11 +116,9 @@ bool ysQueue::isTaskAvailable()
 
 ysJob* ysQueue::fetchTask()
 {
-    QString taskFilename="";
+    QString taskFilename="";  
 
-    queueDir.refresh();
-    int fileCount=queueDir.entryList().count();
-
+    int fileCount=fileList.count();
     if (fileCount==0)
     {
         // File disappeared?
@@ -94,23 +126,45 @@ ysJob* ysQueue::fetchTask()
     }
 
     int fetchIndex=0;
-
     while ((taskFilename=="") && (fetchIndex<fileCount))
     {
         // Get task file for the next job to be processed
-        taskFilename=queueDir.entryList().at(fetchIndex);
+        taskFilename=fileList.at(fetchIndex);
 
-        if (isTaskFileLocked(taskFilename))
+        if (queueDir.exists(taskFilename))
         {
-            // File is locked, so go on with the next older file
+            if (isTaskFileLocked(taskFilename))
+            {
+                // File is locked, so go on with the next older file
+                taskFilename="";
+            }
+            else
+            {
+                lockTask(taskFilename);
+
+                // Check if the current task is a night task. If so and
+                // it is during the day, then go on to the next file
+                if (skipNightRecon(taskFilename, isNightTime))
+                {
+                    unlockTask(taskFilename);
+                    taskFilename="";
+                }
+            }
+        }
+        else
+        {
+            // Task might have been removed by load balancer, go to next file
             taskFilename="";
         }
+
+        fetchIndex++;
     }
 
     // Check available diskspace. Don't process any case if
     // it cannot guaranteed that enough space is available.
     if (!isRequiredDiskSpaceAvailble())
     {
+        unlockTask(taskFilename);
         taskFilename="";
     }
 
@@ -134,6 +188,7 @@ ysJob* ysQueue::fetchTask()
     {
         // Reading task file was not successful
         moveTaskToFailPath(newJob, true);
+        unlockTask(taskFilename);
 
         delete newJob;
         newJob=0; // It's important to return a null pointer!
@@ -146,14 +201,59 @@ ysJob* ysQueue::fetchTask()
 }
 
 
-bool ysQueue::isTaskFileLocked(QString taskFile)
+QString ysQueue::getLockFilename(QString taskFilename)
 {
-    QString lockFilename=taskFile;
+    QString lockFilename=taskFilename;
     lockFilename.truncate(lockFilename.indexOf("."));
     lockFilename+=YS_LOCK_EXTENSION;
 
-    return QFile::exists(YSRA->staticConfig.inqueuePath + "/" + lockFilename);
+    return YSRA->staticConfig.inqueuePath + "/" + lockFilename;
 }
+
+
+bool ysQueue::isTaskFileLocked(QString taskFile)
+{
+    return QFile::exists(getLockFilename(taskFile));
+}
+
+
+bool ysQueue::lockTask(QString taskFile)
+{
+    QString lockFilename=getLockFilename(taskFile);
+
+    if (QFile::exists(lockFilename))
+    {
+        YS_SYSLOG("ERROR: Cannot lock file (lock file already exists) " + lockFilename);
+        return false;
+    }
+
+    QFile lockFile(lockFilename);
+    lockFile.open(QIODevice::ReadWrite | QIODevice::Text);
+    QString placeHolder="YARRA";
+    lockFile.write(placeHolder.toLatin1());
+    lockFile.flush();
+    lockFile.close();
+
+    return true;
+}
+
+
+bool ysQueue::unlockTask(QString taskFile)
+{
+    QString lockFilename=getLockFilename(taskFile);
+
+    if (QFile::exists(lockFilename))
+    {
+        if (!QFile::remove(lockFilename))
+        {
+            YS_SYSLOG("ERROR: Failed to remove lockfile: " + lockFilename);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 
 
 bool ysQueue::cleanWorkPath()
@@ -438,4 +538,69 @@ bool ysQueue::isRequiredDiskSpaceAvailble()
     // Return false if in any of the folders is less space free than the
     // configured space limit
     return (!triggerError);
+}
+
+
+bool ysQueue::skipNightRecon(QString taskFilename, bool nightTimeReconAllowedNow)
+{
+    // If the night-reconstruction mode has been disabled, or if it is night right now,
+    // do not skip the file and process it
+    if (nightTimeReconAllowedNow)
+    {
+        return false;
+    }
+
+    // If the task is a prio task, then don't skip
+    if (taskFilename.contains(QString(YS_LOCK_EXTENSION)+QString(YS_TASK_EXTENSION_PRIO)))
+    {
+        return false;
+    }
+
+    QString reconMode="";
+    // Scoping for lifetime of QSettings object, as the file might be moved later
+    {
+        QSettings taskSettings(YSRA->staticConfig.inqueuePath+"/"+taskFilename, QSettings::IniFormat);
+        reconMode=taskSettings.value("Task/ReconMode", reconMode).toString();
+    }
+
+    // If it unable to determine the recon more, return and don't skip the processing
+    if (reconMode.length()==0)
+    {
+        return false;
+    }
+
+    bool modeRestrictedToNight=false;
+    QString modeFilename=YSRA->staticConfig.modesPath+"/"+reconMode+YS_MODE_EXTENSION;
+    {
+        QSettings modeFile(modeFilename, QSettings::IniFormat);
+        modeRestrictedToNight=modeFile.value("Options/NightTask", modeRestrictedToNight).toBool();
+    }
+
+    if (modeRestrictedToNight)
+    {
+        // OK, file should be reconstructed at night. Rename the task file
+        // to .task_night so that it is prevented that it is reparsed all the time
+        // until the night.
+        changeTaskToNight(taskFilename);
+    }
+
+    return modeRestrictedToNight;
+}
+
+
+void ysQueue::changeTaskToNight(QString taskFilename)
+{
+    // TODO: Create lock file
+
+    QString queuePath=YSRA->staticConfig.inqueuePath+"/";
+
+    QString newFilename=taskFilename;
+    newFilename.truncate(newFilename.indexOf("."));
+    newFilename+=QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_NIGHT);
+    if (!QFile::rename(queuePath+taskFilename, queuePath+newFilename))
+    {
+        YS_SYSLOG("ERROR: Unable to change task to night job!");
+    }
+
+    // TODO: Delete lock file
 }
