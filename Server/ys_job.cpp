@@ -64,7 +64,10 @@ bool ysJob::readTaskFile(QString filename)
         scanFile=taskSettings.value("Task/ScanFile", "!!FAIL").toString();
         reconMode=taskSettings.value("Task/ReconMode", "!!FAIL").toString();
         accNumber=taskSettings.value("Task/ACC", "").toString();
-        emailNotification=taskSettings.value("Task/EMailNotification", "").toString();
+
+        QStringList tempList=taskSettings.value("Task/EMailNotification", "").toStringList();
+        emailNotification=tempList.join(",");
+
         paramValue=taskSettings.value("Task/ParamValue", "N").toString();
 
         patientName=taskSettings.value("Task/PatientName", "Unknown").toString();

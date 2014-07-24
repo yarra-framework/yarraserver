@@ -63,8 +63,9 @@ bool ysStaticConfig::readConfiguration()
         modulesPath=configFile.value("Paths/Modules", modulesPath).toString();
 
         notificationEnabled    =configFile.value("Notification/Enabled",     notificationEnabled).toBool();
-        notificationErrorMail  =configFile.value("Notification/ErrorMail",   notificationErrorMail).toString();
         notificationFromAddress=configFile.value("Notification/FromAddress", notificationFromAddress).toString();
+        QStringList tempList   =configFile.value("Notification/ErrorMail",   notificationErrorMail).toStringList();
+        notificationErrorMail=tempList.join(",");
 
         processTimeout=configFile.value("Options/ProcessTimeout", processTimeout).toInt();
         memkillThreshold=configFile.value("Options/MemKillThreshold", memkillThreshold).toDouble();
