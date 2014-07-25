@@ -102,7 +102,8 @@ bool ysQueue::isTaskAvailable()
     queueDir.refresh();
 
     // First, process then prio recons, afterwards the normal ones
-    QStringList fileList=prioqueueDir.entryList();
+    fileList.clear();
+    fileList=prioqueueDir.entryList();
     fileList.append(queueDir.entryList());
 
     if (fileList.count()>0)
@@ -116,8 +117,6 @@ bool ysQueue::isTaskAvailable()
 
 ysJob* ysQueue::fetchTask()
 {
-    QString taskFilename="";  
-
     int fileCount=fileList.count();
     if (fileCount==0)
     {
@@ -125,11 +124,15 @@ ysJob* ysQueue::fetchTask()
         return 0;
     }
 
+    QString taskFilename="";
     int fetchIndex=0;
-    while ((taskFilename=="") && (fetchIndex<fileCount))
+
+    while ((taskFilename.length()==0) && (fetchIndex<fileCount))
     {
         // Get task file for the next job to be processed
         taskFilename=fileList.at(fetchIndex);
+
+        // TODO: Check if file has correct permissions!
 
         if (queueDir.exists(taskFilename))
         {
@@ -160,18 +163,18 @@ ysJob* ysQueue::fetchTask()
         fetchIndex++;
     }
 
+    if (taskFilename.length()==0)
+    {
+        // No file to process found. Possibly, the only available file is locked right now.
+        return 0;
+    }
+
     // Check available diskspace. Don't process any case if
     // it cannot guaranteed that enough space is available.
     if (!isRequiredDiskSpaceAvailble())
     {
         unlockTask(taskFilename);
         taskFilename="";
-    }
-
-    if (taskFilename=="")
-    {
-        // No file to process found. Possibly, the only available file is locked right now,
-        // or there is not enough diskspace available.
         return 0;
     }
 
@@ -551,7 +554,7 @@ bool ysQueue::skipNightRecon(QString taskFilename, bool nightTimeReconAllowedNow
     }
 
     // If the task is a prio task, then don't skip
-    if (taskFilename.contains(QString(YS_LOCK_EXTENSION)+QString(YS_TASK_EXTENSION_PRIO)))
+    if (taskFilename.contains(QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_PRIO)))
     {
         return false;
     }
@@ -559,7 +562,14 @@ bool ysQueue::skipNightRecon(QString taskFilename, bool nightTimeReconAllowedNow
     QString reconMode="";
     // Scoping for lifetime of QSettings object, as the file might be moved later
     {
-        QSettings taskSettings(YSRA->staticConfig.inqueuePath+"/"+taskFilename, QSettings::IniFormat);
+        QString fullFilename=YSRA->staticConfig.inqueuePath+"/"+taskFilename;
+
+        if (!QFile::exists(fullFilename))
+        {
+            YS_SYSLOG_OUT("WARNING: Cannot read taskfile " + fullFilename);
+        }
+
+        QSettings taskSettings(fullFilename, QSettings::IniFormat);
         reconMode=taskSettings.value("Task/ReconMode", reconMode).toString();
     }
 
@@ -576,22 +586,23 @@ bool ysQueue::skipNightRecon(QString taskFilename, bool nightTimeReconAllowedNow
         modeRestrictedToNight=modeFile.value("Options/NightTask", modeRestrictedToNight).toBool();
     }
 
-    if (modeRestrictedToNight)
+    if (!modeRestrictedToNight)
     {
-        // OK, file should be reconstructed at night. Rename the task file
-        // to .task_night so that it is prevented that it is reparsed all the time
-        // until the night.
-        changeTaskToNight(taskFilename);
+        return false;
     }
 
-    return modeRestrictedToNight;
+    // OK, file should be reconstructed at night. Rename the task file
+    // to .task_night so that it is prevented that it is reparsed all the time
+    // until the night.
+    changeTaskToNight(taskFilename);
+
+    return true;
 }
 
 
 void ysQueue::changeTaskToNight(QString taskFilename)
 {
-    // TODO: Create lock file
-
+    // Note: Lock file already exists here
     QString queuePath=YSRA->staticConfig.inqueuePath+"/";
 
     QString newFilename=taskFilename;
@@ -601,6 +612,8 @@ void ysQueue::changeTaskToNight(QString taskFilename)
     {
         YS_SYSLOG("ERROR: Unable to change task to night job!");
     }
-
-    // TODO: Delete lock file
+    else
+    {
+        YS_SYSLOG_OUT("Changed task to night mode " + newFilename);
+    }
 }

@@ -75,6 +75,13 @@ bool ysStaticConfig::readConfiguration()
         useNightTasks=configFile.value("Options/UseNightTasks", useNightTasks).toBool();
         nightStart=QTime::fromString(configFile.value("Options/NightStart", nightStart.toString(Qt::ISODate)).toString(),Qt::ISODate);
         nightEnd=QTime::fromString(configFile.value("Options/NightEnd", nightEnd.toString(Qt::ISODate)).toString(),Qt::ISODate);
+
+        if ((!nightStart.isValid()) || (!nightEnd.isValid()))
+        {
+            nightStart=QTime(23,0);
+            nightEnd=QTime(5,0);
+            YS_OUT("ERROR: Invalid night time defined. Using default values.");
+        }
     }
 
     if (nightStart<nightEnd)
