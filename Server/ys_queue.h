@@ -51,6 +51,8 @@ protected:
     QStringList fileList;
     bool isNightTime;
 
+    bool displayedPermissionWarning;
+
     bool moveFiles(QStringList files, QString sourcePath, QString targetPath);
 
     int getAvailSpaceGB(QString path);

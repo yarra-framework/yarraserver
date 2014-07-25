@@ -12,6 +12,7 @@ ysQueue::ysQueue()
     uniqueID="";
     isNightTime=true;
     fileList.clear();
+    displayedPermissionWarning=false;
 }
 
 
@@ -49,6 +50,8 @@ bool ysQueue::prepare()
 
     lastDiskErrorNotification=QDateTime::currentDateTime();
     diskErrorNotificationSent=false;
+
+    displayedPermissionWarning=false;
 
     // Remove the HALT file to inform other nodes that we are active
     if (QFile::exists(YSRA->staticConfig.inqueuePath+"/"+YS_HALT_FILE))
@@ -132,25 +135,47 @@ ysJob* ysQueue::fetchTask()
         // Get task file for the next job to be processed
         taskFilename=fileList.at(fetchIndex);
 
-        // TODO: Check if file has correct permissions!
-
         if (queueDir.exists(taskFilename))
         {
-            if (isTaskFileLocked(taskFilename))
+            bool permissionCorrect=true;
+
             {
-                // File is locked, so go on with the next older file
+                // Check if we the file permission are valid. We need read and write.
+                QFileInfo fileInfo(queueDir.absoluteFilePath(taskFilename));
+                permissionCorrect=fileInfo.isReadable() && fileInfo.isWritable();
+            }
+
+            if (!permissionCorrect)
+            {
+                if (!displayedPermissionWarning)
+                {
+                    YS_SYSLOG_OUT("");
+                    YS_SYSLOG_OUT("WARNING: Found (at least) one file with incorrect permissions " + taskFilename);
+                    YS_SYSLOG_OUT("WARNING: It will not be possible to process this case.");
+                    YS_SYSLOG_OUT("WARNING: Check configuration of your Linux shares.");
+                    YS_SYSLOG_OUT("");
+                    displayedPermissionWarning=true;
+                }
                 taskFilename="";
             }
             else
             {
-                lockTask(taskFilename);
-
-                // Check if the current task is a night task. If so and
-                // it is during the day, then go on to the next file
-                if (skipNightRecon(taskFilename, isNightTime))
+                if (isTaskFileLocked(taskFilename))
                 {
-                    unlockTask(taskFilename);
+                    // File is locked, so go on with the next older file
                     taskFilename="";
+                }
+                else
+                {
+                    lockTask(taskFilename);
+
+                    // Check if the current task is a night task. If so and
+                    // it is during the day, then go on to the next file
+                    if (skipNightRecon(taskFilename, isNightTime))
+                    {
+                        unlockTask(taskFilename);
+                        taskFilename="";
+                    }
                 }
             }
         }
