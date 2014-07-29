@@ -148,7 +148,14 @@ void ysControlInterface::processHaltRequest(QLocalSocket* socket)
 
 void ysControlInterface::processLogRequest(QLocalSocket* socket)
 {
-    writeToSocket(parent->status, socket);
+    QString result=parent->status;
+
+    if (parent->shutdownRequested)
+    {
+        result += YS_CTRL_STOPREQUEST;
+    }
+
+    writeToSocket(result, socket);
 }
 
 

@@ -10,6 +10,7 @@
 
 #define YS_CTRL_ACK         "ACK"
 #define YS_CTRL_IDLE        "IDLE"
+#define YS_CTRL_STOPREQUEST " !SHUTDOWN!"
 
 
 class ysControlAPI

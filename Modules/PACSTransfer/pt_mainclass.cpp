@@ -5,11 +5,12 @@
 
 using namespace std;
 
-#define PT_VER        QString("0.1a")
+#define PT_VER        QString("0.2a")
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 #define EXEC_TIMEOUT  21600000
 #define PT_MODE_ID    QString("PACSTransfer")
+#define DCMS_PER_CALL 100
 
 
 ptMainClass::ptMainClass(QObject *parent) :
@@ -171,20 +172,42 @@ void ptMainClass::processTransfer()
 {
     if (readConfig())
     {
-        QDir inputDir(args.at(2));
-        QStringList allFiles=inputDir.entryList(QDir::Files);
+        QString inputPath=args.at(2);
+        QDir inputDir(inputPath);
+        QStringList allFiles=inputDir.entryList(QDir::Files, QDir::Name);
         OUT(QString::number(allFiles.count()) + " files found for DICOM transfer.");
         OUT("");
+        process.setWorkingDirectory(inputPath);
 
         for (int i=0; i<cfg_count; i++)
         {
-            OUT("Starting transfer to PACS "+QString::number(i+1));
+            OUT("Performing transfer to PACS "+QString::number(i+1));
+
+            /*
+            // Directory version
             QString callCmd="storescu --timeout 20 +sd -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
             callCmd+=args.at(2)+"/";
-
             OUT("Command: "+callCmd);
             runCommand(callCmd);
-            OUT("");
+            */
+
+            // File-by-file version to ensure right sending order
+            QString callCmd="";
+            // NOTE: File counter is j here, not i (i=PACS counter)
+            for (int j=0; j<allFiles.count(); j++)
+            {
+                // Combine always 100 DCMs into on call to increase speed
+                if (j % DCMS_PER_CALL==0)
+                {
+                    callCmd="storescu --timeout 20 -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
+                }
+                callCmd.append(" " + allFiles.at(j));
+
+                if ((j % DCMS_PER_CALL==DCMS_PER_CALL-1) || (j==allFiles.count()-1))
+                {
+                    runCommand(callCmd);
+                }
+            }
         }
 
         if (storescuError)

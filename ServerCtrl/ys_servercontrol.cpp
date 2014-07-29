@@ -269,26 +269,42 @@ void ysServerControl::readResponse()
     case MODE_STATUS:
         if (response==YS_CTRL_IDLE)
         {
-            output("Server is idle.", YS_CTRL_IDLE);
+            output("Server is idle.", YS_CTRL_PF_IDLE);
         }
         else
         {
+            bool serverShutdown=false;
+            if (response.contains(YS_CTRL_STOPREQUEST))
+            {
+                response.truncate(response.indexOf(YS_CTRL_STOPREQUEST));
+                serverShutdown=true;
+            }
+
             output(response, response);
+            if (serverShutdown)
+            {
+                output("Server is going down after job.", YS_CTRL_PF_SHUTDOWN);
+            }
         }
         break;
 
     case MODE_SHOWLOG:
         if (response==YS_CTRL_IDLE)
         {
-            output("Server is idle.", YS_CTRL_IDLE);
+            output("Server is idle.", YS_CTRL_PF_IDLE);
         }
         else
         {
             socket.disconnectFromServer();
+
+            if (response.contains(YS_CTRL_STOPREQUEST))
+            {
+                response.truncate(response.indexOf(YS_CTRL_STOPREQUEST));
+            }
+
             displayLog(response);
         }
         break;
-
 
     default:
         break;
