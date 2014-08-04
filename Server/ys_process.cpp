@@ -300,6 +300,7 @@ bool ysProcess::executeCommand()
 
     // Start the process. Note: The commandline and arguments need to be defined before.
     process.setReadChannel(QProcess::StandardOutput);
+    process.setProcessChannelMode(QProcess::MergedChannels);
     process.start(callCmd);
 
     if (process.state()==QProcess::NotRunning)
