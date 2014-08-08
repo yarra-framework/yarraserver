@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define PT_VER        QString("0.2a")
+#define PT_VER        QString("0.3a")
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 #define EXEC_TIMEOUT  21600000
@@ -206,6 +206,13 @@ void ptMainClass::processTransfer()
                 if ((j % DCMS_PER_CALL==DCMS_PER_CALL-1) || (j==allFiles.count()-1))
                 {
                     runCommand(callCmd);
+
+                    // If connecting to the PACS failed, skip the attempt for the other files. Otherwise,
+                    // the many timeouts will add up to a long delay. Continue with next PACS in the list.
+                    if (returnValue==1)
+                    {
+                        break;
+                    }
                 }
             }
         }

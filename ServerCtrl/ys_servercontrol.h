@@ -48,6 +48,7 @@ protected:
     QLocalSocket socket;
     int mode;
     bool parserFormat;
+    bool forceStart;
 
     quint16 responseSize;
 

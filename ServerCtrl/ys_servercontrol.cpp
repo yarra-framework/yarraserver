@@ -8,6 +8,7 @@ ysServerControl::ysServerControl(QObject *parent) :
 {
     mode=MODE_NONE;
     parserFormat=false;
+    forceStart=false;
     responseSize=0;
 
     connect(&socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
@@ -62,6 +63,10 @@ void ysServerControl::run()
         {
             parserFormat=true;
         }
+        if (QCoreApplication::arguments().contains("--f",Qt::CaseInsensitive))
+        {
+            forceStart=true;
+        }
 
         if (!parserFormat)
         {
@@ -103,6 +108,11 @@ void ysServerControl::quit()
 void ysServerControl::launchServer()
 {
     QString serverBinary=QCoreApplication::applicationDirPath() + "/YarraServer";
+
+    if (forceStart)
+    {
+        serverBinary+=" --force";
+    }
 
     if (QProcess::startDetached(serverBinary))
     {

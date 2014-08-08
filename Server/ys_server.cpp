@@ -113,6 +113,11 @@ bool ysServer::runLoop()
     YS_OUT("Server running (threadID " + QString::number((long)this->thread()->currentThreadId()) + ")");
     YS_SYSLOG_OUT("");
     queue.checkAndSendDiskSpaceNotification();
+
+    // Delete all temporary files (should be clean, but it case the server
+    // previously crashed)
+    queue.cleanWorkPath();
+
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
     while (!shutdownRequested)
