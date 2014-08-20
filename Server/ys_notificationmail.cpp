@@ -16,6 +16,7 @@ void ysNotificationMail::prepare()
 
     notificationEnabled=YSRA->staticConfig.notificationEnabled;
     fromField="From: " + YSRA->staticConfig.notificationFromAddress + "\n";
+    domainRestriction=YSRA->staticConfig.notificationDomainRestriction;
 
     footer = "<div style=\"color: #000; font-family: Arial, Helvetica, sans-serif;\">\n\
 <p style=\"font-size:85%; border-top: 1px solid #999; padding-top: 6px; margin-top: 30px;\">\n\
@@ -137,7 +138,7 @@ void ysNotificationMail::sendErrorNotification(ysJob* job)
         // Add comma only if there are any other receivers
         if (receivers.length()>0)
         {
-            receivers += ", ";
+            receivers += ",";
         }
         receivers += YSRA->staticConfig.notificationErrorMail;
     }
@@ -190,6 +191,10 @@ void ysNotificationMail::sendMail(bool highPriority, QString attachFilename)
     }
 
     QString boundaryID="sdfhsdhty4wsefg#YARRASERVER##sfgi0t3tgvb43vj";
+
+    // Apply filter to the notification list to ensure that only mail addresses
+    // within the internal domain receive a notification
+    filterReceivers();
 
     QString header=fromField;
     header.append("To: " + receivers + "\n");
@@ -249,3 +254,35 @@ void ysNotificationMail::sendMail(bool highPriority, QString attachFilename)
     process_mail->waitForFinished();
     YS_FREE(process_mail);
 }
+
+
+void ysNotificationMail::filterReceivers()
+{
+    if (domainRestriction.isEmpty())
+    {
+        return;
+    }
+
+    QStringList receiverList=receivers.split(",", QString::SkipEmptyParts, Qt::CaseSensitive);
+    QStringList removedAddresses;
+    removedAddresses.clear();
+
+    for (int i=receiverList.count()-1; i>=0; i--)
+    {
+        if (!receiverList.at(i).contains(domainRestriction,Qt::CaseInsensitive))
+        {
+            removedAddresses.append(receiverList.at(i));
+            receiverList.removeAt(i);
+        }
+    }
+
+    if (removedAddresses.count()>0)
+    {
+        YS_SYSTASKLOG("WARNING: Removed the following addresses from notification list " + removedAddresses.join(","));
+    }
+
+    receivers=receiverList.join(",");
+}
+
+
+

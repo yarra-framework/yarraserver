@@ -20,8 +20,11 @@ public:
 
     void sendMail(bool highPriority=false, QString attachFilename="");
 
+    void filterReceivers();
+
     bool notificationEnabled;
     QString fromField;
+    QString domainRestriction;
 
     QString receivers;
     QString subject;

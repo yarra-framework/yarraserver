@@ -24,6 +24,7 @@ ysStaticConfig::ysStaticConfig()
     notificationEnabled=false;
     notificationErrorMail="";
     notificationFromAddress="YarraServer <noreply@localhost>";
+    notificationDomainRestriction="";
 
     memkillThreshold=95;
     driveSpaceNeededGB=20;
@@ -66,6 +67,7 @@ bool ysStaticConfig::readConfiguration()
         notificationFromAddress=configFile.value("Notification/FromAddress", notificationFromAddress).toString();
         QStringList tempList   =configFile.value("Notification/ErrorMail",   notificationErrorMail).toStringList();
         notificationErrorMail=tempList.join(",");
+        notificationDomainRestriction=configFile.value("Notification/DomainRestriction", notificationDomainRestriction).toString();
 
         processTimeout=configFile.value("Options/ProcessTimeout", processTimeout).toInt();
         memkillThreshold=configFile.value("Options/MemKillThreshold", memkillThreshold).toDouble();

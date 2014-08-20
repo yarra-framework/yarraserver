@@ -24,6 +24,8 @@ public:
     bool    notificationEnabled;
     QString notificationErrorMail;
     QString notificationFromAddress;
+    QString notificationDomainRestriction;
+
 
     double memkillThreshold;
     int    driveSpaceNeededGB;
