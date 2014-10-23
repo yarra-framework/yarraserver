@@ -18,8 +18,14 @@ public:
 
     QString sourceIniFilename;
     QString targetIniFilename;
+
+    // For the keys that should be patched with the commandline argument
     QString replacementValue;
     QStringList keysToPatch;
+
+    // For the keys that should be patched with values from the mode file
+    QStringList keys;
+    QStringList values;
 
     int returnValue;
 

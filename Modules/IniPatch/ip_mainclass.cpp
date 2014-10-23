@@ -5,9 +5,12 @@
 
 using namespace std;
 
-#define DT_VER        QString("0.1a")
+#define DT_VER        QString("0.11")
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 #define IP_MODE_ID    QString("IniPatch")
+#define IP_MODE_ID2   QString("IniPatch_static")
+
+//TODO: Implement mechanism for multiple cmdline arguments via section IniPatch_dynamic
 
 
 ipMainClass::ipMainClass(QObject *parent) :
@@ -25,17 +28,17 @@ void ipMainClass::run()
 {
     args=QCoreApplication::arguments();
 
-    OUT("");
     if (args.count()!=5)
     {
-       printUsage();
-       returnValue=1;
+        OUT("");
+        printUsage();
+        returnValue=1;
+        OUT("");
     }
     else
     {
         processTransfer();
     }
-    OUT("");
 
     emit finished();
 }
@@ -47,7 +50,8 @@ void ipMainClass::printUsage()
     OUT("-------------------------------\n");
     OUT("Usage:   IniPatch [mode file] [source ini file] [target (in work dir)] [param value]\n");
     OUT("Purpose: Creates a copy of the source ini file in the work directory with the given name. All keys");
-    OUT("         specified in the mode file will be replaced by the param value passsed as 4th argument.");
+    OUT("         specified in the mode file will be replaced by the param value passsed as 4th argument,");
+    OUT("         or by static values read from the mode file.");
 }
 
 
@@ -72,6 +76,13 @@ void ipMainClass::processTransfer()
         {
             QSettings iniFile(targetIniFilename, QSettings::IniFormat);
 
+            // First, change the keys that should be patched with the values specified in the .mode file
+            for (int i=0; i<keys.count(); i++)
+            {
+                iniFile.setValue(keys.at(i), values.at(i));
+            }
+
+            // Second, change the keys that should be patched dynamically with the call argument
             for (int i=0; i<keysToPatch.count(); i++)
             {
                 iniFile.setValue(keysToPatch.at(i), replacementValue);
@@ -98,15 +109,25 @@ bool ipMainClass::readConfig()
     {
         QSettings settings(modeFilePath, QSettings::IniFormat);
 
+        // First read the keys that should be patched dynamically with the call argument
         int i=0;
         while ((i<50) && (settings.value(IP_MODE_ID+"/PatchKey"+QString::number(i+1), "").toString()!=""))
         {
             i++;
             keysToPatch.append(settings.value(IP_MODE_ID+"/PatchKey"+QString::number(i), "").toString());
         }
+
+        // Now read the keys that should be patched with the values specified in the .mode file
+        settings.beginGroup(IP_MODE_ID2);
+        keys = settings.allKeys();
+
+        for (int i=0; i<keys.count(); i++)
+        {
+            values.append(settings.value(keys.at(i), "").toString());
+        }
     }
 
-    if (keysToPatch.count()==0)
+    if ((keys.count()) && (keysToPatch.count()==0))
     {
         OUT("ERROR: No keys to patch have been found in mode file.");
         return false;
@@ -114,5 +135,3 @@ bool ipMainClass::readConfig()
 
     return true;
 }
-
-
