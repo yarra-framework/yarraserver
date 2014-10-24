@@ -114,9 +114,9 @@ bool ysServer::runLoop()
     YS_SYSLOG_OUT("");
     queue.checkAndSendDiskSpaceNotification();
 
-    // Delete all temporary files (should be clean, but it case the server
-    // previously crashed)
-    queue.cleanWorkPath();
+    // Check if files from a former reconstruction exist in the work directory. This could be
+    // the case if the server was powered off while a reconstruction was running.
+    queue.checkForCrashedTask();
 
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 

@@ -22,6 +22,7 @@ public:
     bool cleanWorkPath();
 
     static bool cleanPath(QString path);
+    void checkForCrashedTask();
 
     QString uniqueID;
     void generateUniqueID();

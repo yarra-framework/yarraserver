@@ -38,7 +38,7 @@ public:
     QString reconCallCmd;
     bool    storeProcessedFile;
 
-    bool readTaskFile(QString filename);
+    bool readTaskFile(QString filename, bool readCrashedTask=false);
 
     QStringList getAllFiles();
 

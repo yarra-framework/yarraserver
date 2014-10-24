@@ -52,10 +52,17 @@ void ysJob::generateTaskID()
 }
 
 
-bool ysJob::readTaskFile(QString filename)
+bool ysJob::readTaskFile(QString filename, bool readCrashedTask)
 {
     taskFile=filename;
     QString queueDir=YSRA->staticConfig.inqueuePath;
+
+    // If a crashed task file was found in the work directory, read the
+    // file from the work directory instead of the queue
+    if (readCrashedTask)
+    {
+        queueDir=YSRA->staticConfig.workPath;
+    }
 
     // Scoping for lifetime of QSettings object, as the file might be moved later
     {
@@ -94,51 +101,56 @@ bool ysJob::readTaskFile(QString filename)
     // Create ID that is used for the log file and mail notifications
     generateTaskID();
 
-    QDir queue(queueDir);
-    bool fileMissing=false;
-
-    // Check if all files are there
-    QStringList allFiles=getAllFiles();
-    for (int i=0; i<allFiles.count(); i++)
+    // Conduct some tests if the task can be processed. This should not be done for previously
+    // crashed files that were found in the work directory after a reboot of the server
+    if (!readCrashedTask)
     {
-        if (!queue.exists(allFiles.at(i)))
+        QDir queue(queueDir);
+        bool fileMissing=false;
+
+        // Check if all files are there
+        QStringList allFiles=getAllFiles();
+        for (int i=0; i<allFiles.count(); i++)
         {
-            YS_SYSLOG_OUT("ERROR: File is missing " + allFiles.at(i));
-            fileMissing=true;
+            if (!queue.exists(allFiles.at(i)))
+            {
+                YS_SYSLOG_OUT("ERROR: File is missing " + allFiles.at(i));
+                fileMissing=true;
+            }
         }
+
+        if (fileMissing)
+        {
+            YS_SYSLOG_OUT("ERROR: The submitted task is missing input files.");
+            YS_SYSLOG_OUT("ERROR: Task will not be processed and moved to fail directory.");
+
+            setErrorReason("Missing input files");
+            YSRA->notification.sendErrorNotification(this);
+
+            return false;
+        }
+
+        // Check if the reconstruction mode is valid
+        if (!YSRA->dynamicConfig.isReconModeAvailable(reconMode))
+        {
+            YS_SYSLOG_OUT("ERROR: The requested reconstruction mode is not available on this server.");
+            YS_SYSLOG_OUT("ERROR: Cannot process the task. Moving task to fail directory.");
+
+            setErrorReason("Reconstruction mode not available");
+            YSRA->notification.sendErrorNotification(this);
+
+            return false;
+        }
+
+        // Now that it is likely that the file can be processed, create a task specific log
+        YSRA->log.openTaskLog(taskID, uniqueID);
+
+        // Dump some job information into the job file
+        logJobInformation();
+
+        // Remember when the job was started
+        processingStart=QDateTime::currentDateTime();
     }
-
-    if (fileMissing)
-    {
-        YS_SYSLOG_OUT("ERROR: The submitted task is missing input files.");
-        YS_SYSLOG_OUT("ERROR: Task will not be processed and moved to fail directory.");
-
-        setErrorReason("Missing input files");
-        YSRA->notification.sendErrorNotification(this);
-
-        return false;
-    }
-
-    // Check if the reconstruction mode is valid
-    if (!YSRA->dynamicConfig.isReconModeAvailable(reconMode))
-    {
-        YS_SYSLOG_OUT("ERROR: The requested reconstruction mode is not available on this server.");
-        YS_SYSLOG_OUT("ERROR: Cannot process the task. Moving task to fail directory.");
-
-        setErrorReason("Reconstruction mode not available");
-        YSRA->notification.sendErrorNotification(this);
-
-        return false;
-    }
-
-    // Now that it is likely that the file can be processed, create a task specific log
-    YSRA->log.openTaskLog(taskID, uniqueID);
-
-    // Dump some job information into the job file
-    logJobInformation();
-
-    // Remember when the job was started
-    processingStart=QDateTime::currentDateTime();
 
     return true;
 }

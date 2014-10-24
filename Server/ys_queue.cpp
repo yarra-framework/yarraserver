@@ -642,3 +642,52 @@ void ysQueue::changeTaskToNight(QString taskFilename)
         YS_SYSLOG_OUT("Changed task to night mode " + newFilename);
     }
 }
+
+
+void ysQueue::checkForCrashedTask()
+{
+    QDir lworkDir(YSRA->staticConfig.workPath);
+
+    QStringList taskFilter;
+    taskFilter << QString("*")+QString(YS_TASK_EXTENSION) << QString("*")+QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_PRIO)
+               << QString("*")+QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_NIGHT);
+
+    lworkDir.setNameFilters(taskFilter);
+    lworkDir.refresh();
+
+    QStringList lfileList;
+    lfileList.clear();
+    lfileList=lworkDir.entryList();
+
+    if (lfileList.count()>0)
+    {
+        // Take the first task file from the list (assuming that there is only one task file)
+        QString taskFilename=lfileList.at(0);
+
+        // OK, a former crashed task exists in the work direcotory
+        // Create a job and move all files to the fail directory
+        YS_SYSLOG_OUT("WARNING: Found incomplete task in work directory from prior crash: " + taskFilename);
+
+        // Generate a unique ID for this job based on the current time (incl ms to make it unique).
+        // This time ID will be used throughout the job processing (the job object retrieves it
+        // from the queue object during the setup of the job).
+        generateUniqueID();
+
+        YS_SYSLOG_OUT("Moving crashed task to fail directory.");
+        ysJob* newJob=new ysJob;
+        newJob->readTaskFile(taskFilename, true);
+        moveTaskToFailPath(newJob, false);
+
+        // Send error notification
+        newJob->setErrorReason("Incomplete task found during server boot");
+        YSRA->notification.sendErrorNotification(newJob);
+
+        delete newJob;
+        newJob=0;
+    }
+
+    // Finally, clean all files in the work directory
+    cleanWorkPath();
+}
+
+
