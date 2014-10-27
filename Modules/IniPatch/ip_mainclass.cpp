@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define DT_VER        QString("0.11")
+#define DT_VER        QString("0.12")
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 #define IP_MODE_ID    QString("IniPatch")
 #define IP_MODE_ID2   QString("IniPatch_static")
@@ -125,12 +125,6 @@ bool ipMainClass::readConfig()
         {
             values.append(settings.value(keys.at(i), "").toString());
         }
-    }
-
-    if ((keys.count()) && (keysToPatch.count()==0))
-    {
-        OUT("ERROR: No keys to patch have been found in mode file.");
-        return false;
     }
 
     return true;
