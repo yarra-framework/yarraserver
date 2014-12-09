@@ -5,7 +5,7 @@
 #include <QtCore>
 #include "ys_runtimeaccess.h"
 
-#define YS_VERSION          "0.6"
+#define YS_VERSION          "0.7"
 #define YS_SLEEP_INTERVAL   10
 #define YS_CI_ID            "YarraServer"
 #define YS_CI_SETUPTIMOUT   1000
@@ -76,6 +76,8 @@
 #define YS_MODEMACRO_VALUE_PARAM          "%vparam"
 #define YS_MODEMACRO_VALUE_TASKID         "%vtid"
 #define YS_MODEMACRO_VALUE_UNIQUETASKID   "%vuid"
+
+#define YS_MODEMACRO_HELPER_QUOTE         "%hq"
 
 
 #endif // YS_GLOBAL_H

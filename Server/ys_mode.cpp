@@ -269,6 +269,12 @@ QString ysMode::parseString(QString input, QString postprocIn, QString postprocO
         input.replace(YS_MODEMACRO_VALUE_UNIQUETASKID,replacement);
     }
 
+    if (input.contains(YS_MODEMACRO_HELPER_QUOTE))
+    {
+        QString replacement="\"";
+        input.replace(YS_MODEMACRO_HELPER_QUOTE,replacement);
+    }
+
     return input;
 }
 
