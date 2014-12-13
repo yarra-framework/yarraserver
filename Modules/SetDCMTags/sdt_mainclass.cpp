@@ -217,12 +217,35 @@ void sdtMainClass::processPostProc()
     }
     else
     {
+        if (!readConfiguration())
+        {
+            OUT("ERROR: Unable to read configuration.");
+            returnValue=1;
+            return;
+        }
+
+        if (!readTWIXInformation())
+        {
+            OUT("ERROR: Unable to read scan information.");
+            returnValue=1;
+            return;
+        }
+
         process.setWorkingDirectory(outputPath);                      
         QString callCmd="";
+
+        // TODO: Set sorting
+        outputDir.setFilter(QDir::Files);
+        outputDir.setSorting(QDir::Name);
+        outputDir.refresh();
+        allFiles=outputDir.entryList(QDir::Files, QDir::Name);
 
         for (int i=0; i<allFiles.count(); i++)
         {
             callCmd="dcmodify -nb ";
+
+            // TODO: Consider the series number if two dots in the file name
+            imageNumber=i;
 
             // Get the required instructions for the DICOM tags
             callCmd.append(composeDICOMTags(allFiles.at(i)));
@@ -247,8 +270,40 @@ QString sdtMainClass::composeDICOMTags(QString fname)
     QString cmdLine="";
 
     // Set patient name
-    cmdLine += "-i \"(0010,0010)=" + patientName + "\" ";
-    cmdLine += "-i \"(0010,0020)=" + patientID + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_PatientName       + "=" + patientName + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_PatientID         + "=" + patientID + "\" ";
+
+    cmdLine += QString("-i \"") + DCMTAG_PatientBirthday   + "=" + patientBirthday + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_PatientSex        + "=" + patientSex + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_PatientSize       + "=" + patientSize + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_PatientWeight     + "=" + patientWeight + "\" ";
+
+    cmdLine += QString("-i \"") + DCMTAG_SliceThickness    + "=" + sliceThickness + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_PixelSpacing      + "=" + pixelSpacing + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_SliceLocation     + "=" + sliceLocation + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_PatientPosition   + "=" + patientPosition + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_ImageOrientation  + "=" + imageOrientation + "\" ";
+
+    cmdLine += QString("-i \"") + DCMTAG_AccessionNumber   + "=" + accessionNumber + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_Modality          + "=" + modality + "\" ";
+
+    cmdLine += QString("-i \"") + DCMTAG_StudyDescription  + "=" + studyDescription + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_SeriesDescription + "=" + seriesDescription + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_ImageType         + "=" + imageType + "\" ";
+
+    cmdLine += QString("-i \"") + DCMTAG_SeriesNumber      + "=" + QString::number(seriesNumber) + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_AcquisitionNumber + "=" + QString::number(acquisitionNumber) + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_ImageNumber       + "=" + QString::number(imageNumber) + "\" ";
+
+    cmdLine += QString("-i \"") + DCMTAG_ImageTime         + "=" + imageTime + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_ImageDate         + "=" + imageDate + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_StudyTime         + "=" + studyTime + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_StudyDate         + "=" + studyDate + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_SeriesTime        + "=" + seriesTime + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_SeriesDate        + "=" + seriesDate + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_AcquisitionTime   + "=" + acquisitionTime + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_AcquisitionDate   + "=" + acquisitionDate + "\" ";
+
 
     // TODO: Define image comments via config file etc
 
@@ -266,10 +321,40 @@ bool sdtMainClass::readConfiguration()
 
 bool sdtMainClass::readTWIXInformation()
 {
-    // TODO
+    // Default all values
 
     patientName="Mustermann^Hans";
-    patientID="100100100";
+    patientID="12345678";
+    patientSex="M";
+    patientBirthday="19790725";
+    patientWeight="60";
+    patientSize="1.80";
+    patientPosition="HFS";
+    imageOrientation="1\\0\\0\\0\\1\\0";
+
+    sliceThickness="1";
+    pixelSpacing="1.0\\1.0";
+    sliceLocation="0.0";
+
+    accessionNumber="12345678";
+    modality="MR";
+
+    studyDate="20141212";
+    seriesDate=studyDate;
+    imageDate=studyDate;
+    acquisitionDate=studyDate;
+    studyTime="120000.000000";
+    seriesTime=studyTime;
+    imageTime=studyTime;
+    acquisitionTime=studyTime;
+
+    studyDescription="Yarra Reconstruction";
+    seriesDescription="Yarra Series";
+    imageType="ORIGINAL\\PRIMARY\\M\\ND";
+
+    seriesNumber=0;
+    acquisitionNumber=0;
+    imageNumber=0;
 
     return true;
 }
