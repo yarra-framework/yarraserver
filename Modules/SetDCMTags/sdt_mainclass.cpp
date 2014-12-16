@@ -1,7 +1,12 @@
 #include "sdt_mainclass.h"
 
+#include "dcmtk/config/osconfig.h"
+#include "dcmtk/dcmdata/dcuid.h"
+#include "dcmtk/ofstd/ofstream.h"
+
 #include <iostream>
 #include <QtCore>
+
 
 using namespace std;
 
@@ -240,11 +245,17 @@ void sdtMainClass::processPostProc()
         outputDir.refresh();
         allFiles=outputDir.entryList(QDir::Files, QDir::Name);
 
+        createStudyUID();
+        createSeriesUID();
+
+
         for (int i=0; i<allFiles.count(); i++)
         {
             callCmd="dcmodify -nb ";
 
             // TODO: Consider the series number if two dots in the file name
+            // TODO: Create new series ID for every subseries
+
             imageNumber=i;
 
             // Get the required instructions for the DICOM tags
@@ -304,6 +315,8 @@ QString sdtMainClass::composeDICOMTags(QString fname)
     cmdLine += QString("-i \"") + DCMTAG_AcquisitionTime   + "=" + acquisitionTime + "\" ";
     cmdLine += QString("-i \"") + DCMTAG_AcquisitionDate   + "=" + acquisitionDate + "\" ";
 
+    cmdLine += QString("-i \"") + DCMTAG_StudyUID          + "=" + studyUID + "\" ";
+    cmdLine += QString("-i \"") + DCMTAG_SeriesUID         + "=" + seriesUID + "\" ";
 
     // TODO: Define image comments via config file etc
 
@@ -316,6 +329,22 @@ bool sdtMainClass::readConfiguration()
     // TODO
 
     return true;
+}
+
+
+void sdtMainClass::createStudyUID()
+{
+    char uid[100];
+    dcmGenerateUniqueIdentifier(uid, SITE_SERIES_UID_ROOT);
+    studyUID=QString::fromLatin1(uid);
+}
+
+
+void sdtMainClass::createSeriesUID()
+{
+    char uid[100];
+    dcmGenerateUniqueIdentifier(uid, SITE_SERIES_UID_ROOT);
+    seriesUID=QString::fromLatin1(uid);
 }
 
 
@@ -333,7 +362,7 @@ bool sdtMainClass::readTWIXInformation()
     imageOrientation="1\\0\\0\\0\\1\\0";
 
     sliceThickness="1";
-    pixelSpacing="1.0\\1.0";
+    pixelSpacing="1.000000\\1.000000";
     sliceLocation="0.0";
 
     accessionNumber="12345678";
@@ -352,9 +381,12 @@ bool sdtMainClass::readTWIXInformation()
     seriesDescription="Yarra Series";
     imageType="ORIGINAL\\PRIMARY\\M\\ND";
 
-    seriesNumber=0;
-    acquisitionNumber=0;
-    imageNumber=0;
+    seriesNumber=1;
+    acquisitionNumber=1;
+    imageNumber=1;
+
+    studyUID="";
+    seriesUID="";
 
     return true;
 }

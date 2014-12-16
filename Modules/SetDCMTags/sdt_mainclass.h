@@ -16,7 +16,7 @@
 #define DCMTAG_PatientPosition    "(0018,5100)"
 #define DCMTAG_ImageOrientation   "(0020,0037)"
 
-#define DCMTAG_AccessionNumber    "(0020,0012)"
+#define DCMTAG_AccessionNumber    "(0008,0050)"
 #define DCMTAG_Modality           "(0008,0060)"
 
 #define DCMTAG_StudyDescription   "(0008,1030)"
@@ -37,7 +37,8 @@
 #define DCMTAG_AcquisitionTime    "(0008,0032)"
 #define DCMTAG_AcquisitionDate    "(0008,0022)"
 
-
+#define DCMTAG_StudyUID           "(0020,000D)"
+#define DCMTAG_SeriesUID          "(0020,000E)"
 
 
 
@@ -60,6 +61,8 @@ public:
     bool readConfiguration();
     bool readTWIXInformation();
 
+    void createStudyUID();
+    void createSeriesUID();
 
 signals:
     void finished();
@@ -97,6 +100,9 @@ private:
     QString studyDescription;
     QString seriesDescription;
     QString imageType;
+
+    QString studyUID;
+    QString seriesUID;
 
     int seriesNumber;
     int imageNumber;
