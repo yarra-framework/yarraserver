@@ -5,12 +5,14 @@
 
 using namespace std;
 
-#define PT_VER        QString("0.3a")
+#define PT_VER        QString("0.4a")
+#define PT_MODE_ID    QString("PACSTransfer")
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
+
 #define EXEC_TIMEOUT  21600000
-#define PT_MODE_ID    QString("PACSTransfer")
 #define DCMS_PER_CALL 100
+#define NUMBER_RETRIES 3
 
 
 ptMainClass::ptMainClass(QObject *parent) :
@@ -68,7 +70,7 @@ bool ptMainClass::runCommand(QString cmd)
     if (process.state()==QProcess::NotRunning)
     {
         OUT("ERROR: Process returned immediately.");
-        returnValue=1;
+        execValue=1;
     }
     else
     {
@@ -92,7 +94,7 @@ bool ptMainClass::runCommand(QString cmd)
             OUT("WARNING: Process is still active. Killing process.");
             process.kill();
             execResult=false;
-            returnValue=1;
+            execValue=1;
         }
         else
         {
@@ -115,7 +117,7 @@ bool ptMainClass::runCommand(QString cmd)
             {
                 OUT("WARNING: Process is still active. Killing process.");
                 process.kill();
-                returnValue=1;
+                execValue=1;
             }
         }
     }     
@@ -126,7 +128,7 @@ bool ptMainClass::runCommand(QString cmd)
     {
         OUT("ERROR: The storescu process crashed.");
         execResult=false;
-        returnValue=1;
+        execValue=1;
     }
     if (process.exitStatus()==QProcess::NormalExit)
     {
@@ -134,7 +136,7 @@ bool ptMainClass::runCommand(QString cmd)
         {
             OUT("ERROR: storescu returned an error.");
             storescuError=true;
-            returnValue=1;
+            execValue=1;
         }
     }
 
@@ -191,6 +193,8 @@ void ptMainClass::processTransfer()
             runCommand(callCmd);
             */
 
+            int numberRetries=NUMBER_RETRIES;
+
             // File-by-file version to ensure right sending order
             QString callCmd="";
             // NOTE: File counter is j here, not i (i=PACS counter)
@@ -205,7 +209,32 @@ void ptMainClass::processTransfer()
 
                 if ((j % DCMS_PER_CALL==DCMS_PER_CALL-1) || (j==allFiles.count()-1))
                 {
-                    runCommand(callCmd);
+                    // Initial value to get into the loop
+                    execValue=-1;
+                    int retryCount=0;
+
+                    // Try sending the images several times
+                    while ((retryCount<numberRetries) && (execValue!=0))
+                    {
+                        // Execute the transfer
+                        runCommand(callCmd);
+
+                        if (execValue!=0)
+                        {
+                            OUT("WARNING: Retrying PACS transfer.");
+                        }
+
+                        // TODO: Possibly wait for a little time until the PACS recovered.
+
+                        retryCount++;
+                    }
+
+                    // If there was a problem even after retrying, return a failure
+                    // value to Yarra that the transfer was not successfull.
+                    if (execValue!=0)
+                    {
+                        returnValue=execValue;
+                    }
 
                     // If connecting to the PACS failed, skip the attempt for the other files. Otherwise,
                     // the many timeouts will add up to a long delay. Continue with next PACS in the list.
