@@ -6,14 +6,15 @@
 
 using namespace std;
 
-#define PT_VER        QString("0.4a")
+#define PT_VER        QString("0.4b")
 #define PT_MODE_ID    QString("PACSTransfer")
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 
-#define EXEC_TIMEOUT  21600000
-#define DCMS_PER_CALL 100
-#define NUMBER_RETRIES 3
+#define EXEC_TIMEOUT    21600000
+#define DCMS_PER_CALL   100
+#define NUMBER_RETRIES  5
+#define RETRY_PAUSETIME 10000
 
 
 ptMainClass::ptMainClass(QObject *parent) :
@@ -220,7 +221,7 @@ void ptMainClass::processTransfer()
                             OUT("WARNING: Retrying PACS transfer.");
 
                             // Wait for a little time until the PACS recovered.
-                            QTest::qWait(1000);
+                            QTest::qWait(RETRY_PAUSETIME);
                         }
 
                         retryCount++;
