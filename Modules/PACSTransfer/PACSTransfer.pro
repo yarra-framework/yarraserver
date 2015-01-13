@@ -7,6 +7,7 @@
 QT       += core network
 
 QT       -= gui
+QT       += testlib
 
 TARGET = PACSTransfer
 CONFIG   += console

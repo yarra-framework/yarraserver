@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <QtCore>
+#include <QTest>
 
 using namespace std;
 
@@ -70,7 +71,7 @@ bool ptMainClass::runCommand(QString cmd)
     if (process.state()==QProcess::NotRunning)
     {
         OUT("ERROR: Process returned immediately.");
-        execValue=1;
+        execResult=false;
     }
     else
     {
@@ -94,11 +95,9 @@ bool ptMainClass::runCommand(QString cmd)
             OUT("WARNING: Process is still active. Killing process.");
             process.kill();
             execResult=false;
-            execValue=1;
         }
         else
         {
-            execResult=true;
         }
     }
     else
@@ -106,18 +105,16 @@ bool ptMainClass::runCommand(QString cmd)
         // Normal timeout-handling if QEventLoop works normally
         if (timeoutTimer.isActive())
         {
-            execResult=true;
             timeoutTimer.stop();
         }
         else
         {
             OUT("WARNING: Process event loop timed out.");
-            execResult=false;
             if (process.state()==QProcess::Running)
             {
                 OUT("WARNING: Process is still active. Killing process.");
                 process.kill();
-                execValue=1;
+                execResult=false;
             }
         }
     }     
@@ -128,7 +125,6 @@ bool ptMainClass::runCommand(QString cmd)
     {
         OUT("ERROR: The storescu process crashed.");
         execResult=false;
-        execValue=1;
     }
     if (process.exitStatus()==QProcess::NormalExit)
     {
@@ -136,7 +132,7 @@ bool ptMainClass::runCommand(QString cmd)
         {
             OUT("ERROR: storescu returned an error.");
             storescuError=true;
-            execValue=1;
+            execResult=false;
         }
     }
 
@@ -210,36 +206,33 @@ void ptMainClass::processTransfer()
                 if ((j % DCMS_PER_CALL==DCMS_PER_CALL-1) || (j==allFiles.count()-1))
                 {
                     // Initial value to get into the loop
-                    execValue=-1;
+                    bool transferSuccess=false;
                     int retryCount=0;
 
                     // Try sending the images several times
-                    while ((retryCount<numberRetries) && (execValue!=0))
+                    while ((retryCount<numberRetries) && (!transferSuccess))
                     {
                         // Execute the transfer
-                        runCommand(callCmd);
+                        transferSuccess=runCommand(callCmd);
 
-                        if (execValue!=0)
+                        if (!transferSuccess)
                         {
                             OUT("WARNING: Retrying PACS transfer.");
-                        }
 
-                        // TODO: Possibly wait for a little time until the PACS recovered.
+                            // Wait for a little time until the PACS recovered.
+                            QTest::qWait(1000);
+                        }
 
                         retryCount++;
                     }
 
                     // If there was a problem even after retrying, return a failure
                     // value to Yarra that the transfer was not successfull.
-                    if (execValue!=0)
-                    {
-                        returnValue=execValue;
-                    }
-
                     // If connecting to the PACS failed, skip the attempt for the other files. Otherwise,
                     // the many timeouts will add up to a long delay. Continue with next PACS in the list.
-                    if (returnValue==1)
+                    if (!transferSuccess)
                     {
+                        storescuError=true;
                         break;
                     }
                 }

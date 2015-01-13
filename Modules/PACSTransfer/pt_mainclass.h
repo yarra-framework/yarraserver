@@ -19,7 +19,6 @@ public:
     QProcess process;
     QStringList args;
 
-    int execValue;
     int returnValue;
 
     // Settings
