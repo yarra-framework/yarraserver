@@ -493,7 +493,7 @@ void ysQueue::checkAndSendDiskSpaceNotification()
     if (getAvailSpaceGB(YSRA->staticConfig.failPath)<spaceThreshold)
     {
         triggerNotification=true;
-        affectedDirs += YSRA->staticConfig.workPath + "; ";
+        affectedDirs += YSRA->staticConfig.failPath + "; ";
     }
 
     if (getAvailSpaceGB(YSRA->staticConfig.storagePath)<spaceThreshold)
@@ -519,7 +519,7 @@ void ysQueue::checkAndSendDiskSpaceNotification()
         diskSpaceNotificationSent=true;
     }
 
-}\
+}
 
 
 bool ysQueue::isRequiredDiskSpaceAvailble()
@@ -539,7 +539,7 @@ bool ysQueue::isRequiredDiskSpaceAvailble()
     if (getAvailSpaceGB(YSRA->staticConfig.failPath)<errorThreshold)
     {
         triggerError=true;
-        affectedDirs += YSRA->staticConfig.workPath + "; ";
+        affectedDirs += YSRA->staticConfig.failPath + "; ";
     }
 
     if (getAvailSpaceGB(YSRA->staticConfig.storagePath)<errorThreshold)

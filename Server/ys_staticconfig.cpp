@@ -28,7 +28,7 @@ ysStaticConfig::ysStaticConfig()
 
     memkillThreshold=95;
     driveSpaceNeededGB=20;
-    driveSpaceNotificationThresholdGB=0;
+    driveSpaceNotificationThresholdGB=40;
 
     processTimeout=YS_EXEC_TIMEOUT;
 
