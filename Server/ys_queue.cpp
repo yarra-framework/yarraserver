@@ -386,6 +386,9 @@ bool ysQueue::moveTaskToFailPath(ysJob* job, bool filesInQueue)
         return false;
     }
 
+    // TODO: Copy subdir with reconstructed images, so that they can be re-sent to the PACS
+    //       without running the whole reconstruction again
+
     return true;
 }
 

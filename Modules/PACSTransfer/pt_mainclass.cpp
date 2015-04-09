@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define PT_VER        QString("0.4c")
+#define PT_VER        QString("0.4d")
 #define PT_MODE_ID    QString("PACSTransfer")
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
@@ -180,7 +180,7 @@ void ptMainClass::processTransfer()
 
         for (int i=0; i<cfg_count; i++)
         {
-            OUT("Performing transfer to PACS "+QString::number(i+1));
+            OUT("Performing transfer to "+cfg_name.at(i));
 
             /*
             // Directory version
@@ -200,7 +200,7 @@ void ptMainClass::processTransfer()
                 // Combine always 100 DCMs into on call to increase speed
                 if (j % DCMS_PER_CALL==0)
                 {
-                    callCmd="storescu --timeout 20 -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
+                    callCmd="storescu -to 60 -ta 60 -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
                 }
                 callCmd.append(" " + allFiles.at(j));
 
@@ -223,7 +223,7 @@ void ptMainClass::processTransfer()
                         // with each repetition (10s, 20s, 30s, 40s, 50s).
                         if ((!transferSuccess) && (retryCount<numberRetries))
                         {
-                            OUT("WARNING: Retrying PACS transfer.");
+                            OUT("WARNING: Retrying PACS transfer at image "+QString::number(j)+" / "+QString::number(allFiles.count())+".");
 
                             // Wait for some time (hoping that the PACSs recovers).
                             // Increase the wait time with each repetition.
@@ -274,6 +274,7 @@ bool ptMainClass::readConfig()
             cfg_AET.append ( settings.value(PT_MODE_ID+"/AET" , "STORESCU").toString() );
             cfg_IP.append  ( settings.value(PT_MODE_ID+"/IP"  , "")        .toString() );
             cfg_port.append( settings.value(PT_MODE_ID+"/Port", "")        .toString() );
+            cfg_name.append( settings.value(PT_MODE_ID+"/Name", "PACS "+QString::number(cfg_count)).toString() );
         }
 
         // Now, read settings with a number index.
@@ -284,6 +285,7 @@ bool ptMainClass::readConfig()
             cfg_AET.append ( settings.value(PT_MODE_ID+"/AET_" +QString::number(cfg_count), "STORESCU").toString() );
             cfg_IP.append  ( settings.value(PT_MODE_ID+"/IP_"  +QString::number(cfg_count), "")        .toString() );
             cfg_port.append( settings.value(PT_MODE_ID+"/Port_"+QString::number(cfg_count), "")        .toString() );
+            cfg_name.append( settings.value(PT_MODE_ID+"/Name_"+QString::number(cfg_count), "PACS "+QString::number(cfg_count)).toString() );
         }
     }
 

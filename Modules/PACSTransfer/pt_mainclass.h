@@ -26,6 +26,7 @@ public:
     QStringList cfg_AET;
     QStringList cfg_IP;
     QStringList cfg_port;
+    QStringList cfg_name;
 
     int cfg_count;
     bool storescuError;
