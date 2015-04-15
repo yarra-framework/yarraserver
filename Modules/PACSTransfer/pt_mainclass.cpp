@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define PT_VER        QString("0.4d")
+#define PT_VER        QString("0.4e")
 #define PT_MODE_ID    QString("PACSTransfer")
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
@@ -132,7 +132,6 @@ bool ptMainClass::runCommand(QString cmd)
         if (process.exitCode()!=0)
         {
             OUT("ERROR: storescu returned an error.");
-            storescuError=true;
             execResult=false;
         }
     }
