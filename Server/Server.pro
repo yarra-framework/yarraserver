@@ -28,7 +28,8 @@ SOURCES += main.cpp \
     ys_notificationmail.cpp \
     ys_queue.cpp \
     ys_statistics.cpp \
-    ys_mode.cpp
+    ys_mode.cpp \
+    ../Common/yc_utils.cpp
 
 HEADERS += \
     ys_server.h \
@@ -44,4 +45,5 @@ HEADERS += \
     ys_notificationmail.h \
     ys_queue.h \
     ys_statistics.h \
-    ys_mode.h
+    ys_mode.h \
+    ../Common/yc_utils.h

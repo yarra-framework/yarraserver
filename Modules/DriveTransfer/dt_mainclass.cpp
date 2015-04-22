@@ -3,6 +3,8 @@
 #include <iostream>
 #include <QtCore>
 
+#include "../../Common/yc_utils.h"
+
 using namespace std;
 
 #define DT_VER        QString("0.1a")
@@ -54,20 +56,20 @@ void dtMainClass::processTransfer()
     if (readConfig())
     {
         QDir inputDir(sourcePath);
-        QStringList allFiles=inputDir.entryList(QDir::Files, QDir::Name);
+        QStringList allFiles=inputDir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
         OUT(QString::number(allFiles.count()) + " files found for transfer.");
 
         for (int i=0; i<allFiles.count(); i++)
         {
             QString filename=allFiles.at(i);
-            if (!QFile::copy(sourcePath+"/"+filename,targetDir.filePath(filename)))
+            if (!ycUtils::copyRecursively(sourcePath+"/"+filename,targetDir.filePath(filename)))
             {
                 OUT("ERROR: Cannot copy file " +QString(sourcePath+"/"+filename)+ " to " + targetDir.filePath(filename));
                 returnValue=1;
                 break;
             }
         }
-        OUT("Finished transferring.");
+        OUT("Finished transferring files.");
     }
     else
     {

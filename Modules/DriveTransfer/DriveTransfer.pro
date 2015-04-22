@@ -16,9 +16,11 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    dt_mainclass.cpp
+    dt_mainclass.cpp \
+    ../../Common/yc_utils.cpp
 
 HEADERS += \
-    dt_mainclass.h
+    dt_mainclass.h \
+    ../../Common/yc_utils.h
 
 
