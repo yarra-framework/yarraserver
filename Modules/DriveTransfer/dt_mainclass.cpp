@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define DT_VER        QString("0.1a")
+#define DT_VER        QString("0.11")
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 #define DT_MODE_ID    QString("DriveTransfer")
 
@@ -97,8 +97,12 @@ bool dtMainClass::readConfig()
 
     if (!targetDir.cd(targetPath))
     {
-        OUT("ERROR: Cannot access target path " + targetPath);
-        return false;
+        // Try to create target path if it does not exist
+        if (!targetDir.mkdir(targetPath))
+        {
+            OUT("ERROR: Cannot access nor create target path " + targetPath);
+            return false;
+        }
     }
 
     // Check if task directory already exsists in the storage path
