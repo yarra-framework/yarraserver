@@ -286,6 +286,10 @@ bool ysProcess::executeCommand()
         memkillThreshold=-1;
     }
 
+    // Initialize process monitoring variables
+    outputLines=0;
+    lastOutput.start();
+
     QEventLoop q;
     connect(&process, SIGNAL(finished(int , QProcess::ExitStatus)), &q, SLOT(quit()));
     connect(&process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));
@@ -361,10 +365,8 @@ bool ysProcess::executeCommand()
         }
     }
 
-    while (process.canReadLine())
-    {
-        YS_TASKLOGPROC(process.readLine());
-    }
+    // Read the remaining output from the process
+    logOutput();
 
     YS_TASKLOG("##[EXEC END]######################################");
     YS_TASKLOG("");
@@ -419,7 +421,27 @@ void ysProcess::logOutput()
     while (process.canReadLine())
     {
         YS_TASKLOGPROC(process.readLine());
+
+        // Remember how many lines were outputed. Enables detecting if the process
+        // creates an unlimited number of lines (infinite loop).
+        outputLines++;
+
+        // Kill the process if too many lines were created (assuming infinite loop)
+        if (outputLines>YS_EXEC_MAXOUTPUTLINES)
+        {
+            YS_SYSLOG_OUT("WARNING: Process created too much output. Assuming infinite loop.");
+            YS_SYSLOG_OUT("WARNING: Killing process.");
+            process.kill();
+
+            // TODO: Notify on error source
+            // TODO: Introduce enum for reason for process shutdown
+
+        }
     }
+
+    // Remember at what time the last output was created. Allow shutting down processes
+    // after too long idle time
+    lastOutput.start();
 }
 
 
@@ -491,6 +513,9 @@ void ysProcess::checkMemory()
             memoryDuringKill=usedMem;
         }
     }
+
+    // TODO: Check duration since last output from module (unless check is disabled).
+    //       Terminate process if the module didn't respond for certain time.
 
     memcheckTimer->start();
 }

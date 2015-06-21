@@ -47,6 +47,11 @@ public:
     bool memkillOccured;
     bool disableMemKill;
 
+    // Variables for detecting module problems
+    int   outputLines;
+    QTime lastOutput;
+    int   maxOutputIdleTime;
+
     void haltAnyProcess();
 
 public slots:
