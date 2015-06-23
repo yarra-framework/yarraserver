@@ -23,10 +23,11 @@
 #define YS_WORKDIR_RECON        "recon"
 #define YS_WORKDIR_POSTPROC     "postproc"
 
-#define YS_EXEC_LOOPSLEEP      10
-#define YS_EXEC_TIMEOUT        86400000
-#define YS_EXEC_MEMCHECK       1000
-#define YS_EXEC_MAXOUTPUTLINES 100000
+#define YS_EXEC_LOOPSLEEP       10
+#define YS_EXEC_TIMEOUT         86400000
+#define YS_EXEC_MEMCHECK        1000
+#define YS_EXEC_MAXOUTPUTLINES  100000
+#define YS_EXEC_MAXOUTPUTIDLE   1800000
 
 #define YS_WAITMESSAGE         "Waiting for next task..."
 #define YS_INI_INVALID         "!!FAIL"

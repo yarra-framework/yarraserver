@@ -11,6 +11,14 @@ class ysProcess : public QObject
 {
     Q_OBJECT
 
+    enum ysTerminationReason
+    {
+        YS_TERMINATION_NONE=0,
+        YS_TERMINATION_MEMKILL,
+        YS_TERMINATION_OUTPUTLIMIT,
+        YS_TERMINATION_OUTPUTTIMEOUT
+    };
+
 public:
     ysProcess();
     ~ysProcess();
@@ -44,13 +52,14 @@ public:
     int totalPhysicalMemory;
     double memkillThreshold;
     int memoryDuringKill;
-    bool memkillOccured;
     bool disableMemKill;
 
     // Variables for detecting module problems
     int   outputLines;
     QTime lastOutput;
     int   maxOutputIdleTime;
+
+    int terminationReason;
 
     void haltAnyProcess();
 

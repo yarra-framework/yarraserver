@@ -28,19 +28,23 @@ public:
     QStringList preprocBinary;
     QStringList preprocArguments;
     bool        preprocDisableMemKill;
+    int         preprocMaxOutputIdle;
 
     QString reconBinary;
     QString reconArguments;
     bool    reconDisableMemKill;
+    int     reconMaxOutputIdle;
 
     int postprocCount;
     QStringList postprocBinary;
     QStringList postprocArguments;
     bool        postprocDisableMemKill;
+    int         postprocMaxOutputIdle;
 
     QString transferBinary;
     QString transferArguments;
     bool    transferDisableMemKill;
+    bool    transferMaxOutputIdle;
 
     QString parseString(QString input, QString postprocIn="", QString postprocOut="");
 

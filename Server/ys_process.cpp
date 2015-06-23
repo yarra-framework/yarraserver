@@ -11,9 +11,10 @@ ysProcess::ysProcess()
     memcheckTimer=0;
     memkillThreshold=-1;
     totalPhysicalMemory=1;
-    memkillOccured=false;
     memoryDuringKill=0;
     disableMemKill=false;
+    terminationReason=YS_TERMINATION_NONE;
+    maxOutputIdleTime=YS_EXEC_MAXOUTPUTIDLE;
 }
 
 
@@ -58,6 +59,8 @@ bool ysProcess::runPreProcessing()
     }
 
     disableMemKill=mode->preprocDisableMemKill;
+    maxOutputIdleTime=mode->preprocMaxOutputIdle;
+
     bool preprocResult=true;
 
     for (int i=0; i<mode->preprocCount; i++)
@@ -99,7 +102,9 @@ bool ysProcess::runReconstruction()
 
     callCmd=mode->getReconCmdLine();
     process.setWorkingDirectory(YSRA->staticConfig.workPath);
+
     disableMemKill=mode->reconDisableMemKill;
+    maxOutputIdleTime=mode->reconMaxOutputIdle;
 
     if (!executeCommand())
     {
@@ -139,6 +144,8 @@ bool ysProcess::runPostProcessing()
     }
 
     disableMemKill=mode->postprocDisableMemKill;
+    maxOutputIdleTime=mode->postprocMaxOutputIdle;
+
     bool postprocResult=true;
 
     for (int i=0; i<mode->postprocCount; i++)
@@ -195,7 +202,9 @@ bool ysProcess::runTransfer()
 
     callCmd=mode->getTransferCmdLine();
     process.setWorkingDirectory(transferDir);
+
     disableMemKill=mode->transferDisableMemKill;
+    maxOutputIdleTime=mode->transferMaxOutputIdle;
 
     if (!executeCommand())
     {
@@ -268,16 +277,16 @@ bool ysProcess::executeCommand()
     YS_TASKLOG("##[EXEC START]####################################");
 
     bool execResult=true;
+    terminationReason=YS_TERMINATION_NONE;
 
     QTimer timeoutTimer;
     timeoutTimer.setSingleShot(true);
-    timeoutTimer.setInterval(YSRA->staticConfig.processTimeout);
+    timeoutTimer.setInterval(YSRA->staticConfig.processTimeout);    
 
     memcheckTimer=new QTimer();
     memcheckTimer->setSingleShot(false);
     memcheckTimer->setInterval(YS_EXEC_MEMCHECK);
     totalPhysicalMemory=getPhysicalMemoryMB();
-    memkillOccured=false;
     memoryDuringKill=0;
     memkillThreshold=YSRA->staticConfig.memkillThreshold;
 
@@ -403,11 +412,17 @@ bool ysProcess::executeCommand()
         YSRA->currentJob->setErrorReason("Process terminated on request");
     }
 
-    if (memkillOccured)
+    if (terminationReason==YS_TERMINATION_MEMKILL)
     {
         YS_TASKLOG("ERROR: Task has been killed due to lack of memory.");
         YS_TASKLOG("ERROR: Used memory when killed was " + QString::number(memoryDuringKill) + "Mb ("+QString::number(totalPhysicalMemory)+" MB physical memory).");
         YSRA->currentJob->setErrorReason("Out of memory");
+    }
+
+    if (terminationReason==YS_TERMINATION_OUTPUTLIMIT)
+    {
+        YS_TASKLOG("ERROR: The task has been killed due to too many output lines.");
+        YSRA->currentJob->setErrorReason("Terminated due to infinite loop.");
     }
 
     YS_FREE(memcheckTimer);
@@ -432,10 +447,7 @@ void ysProcess::logOutput()
             YS_SYSLOG_OUT("WARNING: Process created too much output. Assuming infinite loop.");
             YS_SYSLOG_OUT("WARNING: Killing process.");
             process.kill();
-
-            // TODO: Notify on error source
-            // TODO: Introduce enum for reason for process shutdown
-
+            terminationReason=YS_TERMINATION_OUTPUTLIMIT;
         }
     }
 
@@ -487,7 +499,6 @@ int ysProcess::getPhysicalMemoryMB()
  }
 
 
-
 void ysProcess::checkMemory()
 {
     memcheckTimer->stop();
@@ -509,13 +520,21 @@ void ysProcess::checkMemory()
             YS_SYSLOG_OUT("WARNING: Memory usage is high ("+ QString::number(usedMem) + " Mb).");
             YS_SYSLOG_OUT("WARNING: Killing process due to lack of memory.");
             process.kill();
-            memkillOccured=true;
+            terminationReason=YS_TERMINATION_MEMKILL;
             memoryDuringKill=usedMem;
         }
     }
 
-    // TODO: Check duration since last output from module (unless check is disabled).
-    //       Terminate process if the module didn't respond for certain time.
+    // Check duration since last output from module (unless check is disabled).
+    // Terminate process if the module didn't respond for certain time.
+
+    if ((maxOutputIdleTime>0) && (lastOutput.elapsed()>maxOutputIdleTime))
+    {
+        YS_SYSLOG_OUT("WARNING: Process did not create output for too long time.");
+        YS_SYSLOG_OUT("WARNING: Assuming hanging process. Killing task.");
+        process.kill();
+        terminationReason=YS_TERMINATION_OUTPUTTIMEOUT;
+    }
 
     memcheckTimer->start();
 }

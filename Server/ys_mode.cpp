@@ -12,19 +12,23 @@ ysMode::ysMode()
     preprocBinary.clear();
     preprocArguments.clear();
     preprocDisableMemKill=false;
+    preprocMaxOutputIdle=YS_EXEC_MAXOUTPUTIDLE;
 
     reconBinary="";
     reconArguments="";
     reconDisableMemKill=false;
+    reconMaxOutputIdle=YS_EXEC_MAXOUTPUTIDLE;
 
     postprocCount=0;
     postprocBinary.clear();
     postprocArguments.clear();
     postprocDisableMemKill=false;
+    postprocMaxOutputIdle=YS_EXEC_MAXOUTPUTIDLE;
 
     transferBinary="";
     transferArguments="";
     transferDisableMemKill=false;
+    transferMaxOutputIdle=YS_EXEC_MAXOUTPUTIDLE;
 
     currentJob=0;
     currentProcess=0;
@@ -58,11 +62,13 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
             preprocArguments.append(modeFile.value("PreProcessing/Args"+QString::number(preprocCount), "").toString());
         }
         preprocDisableMemKill=modeFile.value("PreProcessing/DisableMemKill", false).toBool();
+        preprocMaxOutputIdle =modeFile.value("PreProcessing/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
         // Reconstruction settings
         reconBinary        =modeFile.value("Reconstruction/Bin",  YS_INI_INVALID).toString();
         reconArguments     =modeFile.value("Reconstruction/Args", YS_INI_INVALID).toString();
         reconDisableMemKill=modeFile.value("Reconstruction/DisableMemKill", false).toBool();
+        reconMaxOutputIdle =modeFile.value("Reconstruction/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
         // Read post-processing settings
         postprocCount=0;
@@ -74,11 +80,13 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
             postprocArguments.append(modeFile.value("PostProcessing/Args"+QString::number(postprocCount), "").toString());
         }
         postprocDisableMemKill=modeFile.value("PostProcessing/DisableMemKill", false).toBool();
+        postprocMaxOutputIdle =modeFile.value("PostProcessing/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
         // Read transfer settings
         transferBinary        =modeFile.value("Transfer/Bin",  "").toString();
         transferArguments     =modeFile.value("Transfer/Args", "").toString();
         transferDisableMemKill=modeFile.value("Transfer/DisableMemKill", false).toBool();
+        transferMaxOutputIdle =modeFile.value("Transfer/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
         // Read the additional options from the mode file
         currentJob->storeProcessedFile=modeFile.value("Options/KeepRawdata", false).toBool();
