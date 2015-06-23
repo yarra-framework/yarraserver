@@ -5,7 +5,7 @@
 #include <QtCore>
 #include "ys_runtimeaccess.h"
 
-#define YS_VERSION          "0.9b1"
+#define YS_VERSION          "0.9b8"
 #define YS_SLEEP_INTERVAL   10
 #define YS_CI_ID            "YarraServer"
 #define YS_CI_SETUPTIMOUT   1000
@@ -23,11 +23,11 @@
 #define YS_WORKDIR_RECON        "recon"
 #define YS_WORKDIR_POSTPROC     "postproc"
 
-#define YS_EXEC_LOOPSLEEP       10
-#define YS_EXEC_TIMEOUT         86400000
-#define YS_EXEC_MEMCHECK        1000
-#define YS_EXEC_MAXOUTPUTLINES  100000
-#define YS_EXEC_MAXOUTPUTIDLE   1800000
+#define YS_EXEC_LOOPSLEEP       10        // unit: ms
+#define YS_EXEC_TIMEOUT         86400000  // unit: ms
+#define YS_EXEC_MEMCHECK        1000      // unit: ms
+#define YS_EXEC_MAXOUTPUTLINES  100000    // unit: lines
+#define YS_EXEC_MAXOUTPUTIDLE   1800      // unit: sec
 
 #define YS_WAITMESSAGE         "Waiting for next task..."
 #define YS_INI_INVALID         "!!FAIL"

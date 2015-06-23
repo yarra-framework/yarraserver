@@ -201,10 +201,6 @@ bool ysServer::runLoop()
                     {
                         YS_SYSTASKLOG_OUT("Running transfer module failed.");
                         procError=true;
-
-                        // Overwrite the notification message to indicate that
-                        // the reconstruction itself was successful.
-                        YSRA->currentJob->setErrorReason("Transfer problem");
                     }
                 }
 

@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define DT_VER        QString("0.11")
+#define DT_VER        QString("0.11b6")
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 #define DT_MODE_ID    QString("DriveTransfer")
 
@@ -56,12 +56,15 @@ void dtMainClass::processTransfer()
     if (readConfig())
     {
         QDir inputDir(sourcePath);
+        inputDir.refresh();
         QStringList allFiles=inputDir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+
         OUT(QString::number(allFiles.count()) + " files found for transfer.");
 
         for (int i=0; i<allFiles.count(); i++)
         {
             QString filename=allFiles.at(i);
+
             if (!ycUtils::copyRecursively(sourcePath+"/"+filename,targetDir.filePath(filename)))
             {
                 OUT("ERROR: Cannot copy file " +QString(sourcePath+"/"+filename)+ " to " + targetDir.filePath(filename));
@@ -73,6 +76,7 @@ void dtMainClass::processTransfer()
     }
     else
     {
+        OUT("ERROR: Unable to perform transfer to drive.");
         returnValue=1;
     }
 }
@@ -97,10 +101,19 @@ bool dtMainClass::readConfig()
 
     if (!targetDir.cd(targetPath))
     {
+        OUT("Creating target path " + targetPath);
+
         // Try to create target path if it does not exist
         if (!targetDir.mkdir(targetPath))
         {
-            OUT("ERROR: Cannot access nor create target path " + targetPath);
+            OUT("ERROR: Cannot create target path " + targetPath);
+            return false;
+        }
+
+        // If creation was succesfull, then enter the target folder
+        if (!targetDir.cd(targetPath))
+        {
+            OUT("ERROR: Cannot access target path " + targetPath);
             return false;
         }
     }
@@ -124,7 +137,7 @@ bool dtMainClass::readConfig()
         return false;
     }
 
-    OUT("Moving data to path " + targetPath);
+    OUT("Moving data to path " + targetDir.path());
     return true;
 }
 

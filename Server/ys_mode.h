@@ -44,7 +44,7 @@ public:
     QString transferBinary;
     QString transferArguments;
     bool    transferDisableMemKill;
-    bool    transferMaxOutputIdle;
+    int     transferMaxOutputIdle;
 
     QString parseString(QString input, QString postprocIn="", QString postprocOut="");
 

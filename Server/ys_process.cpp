@@ -15,6 +15,9 @@ ysProcess::ysProcess()
     disableMemKill=false;
     terminationReason=YS_TERMINATION_NONE;
     maxOutputIdleTime=YS_EXEC_MAXOUTPUTIDLE;
+    process=0;
+    processWorkingDirectory="";
+    currentModuleType="";
 }
 
 
@@ -60,6 +63,7 @@ bool ysProcess::runPreProcessing()
 
     disableMemKill=mode->preprocDisableMemKill;
     maxOutputIdleTime=mode->preprocMaxOutputIdle;
+    currentModuleType="PreProcessing";
 
     bool preprocResult=true;
 
@@ -68,7 +72,7 @@ bool ysProcess::runPreProcessing()
         YS_SYSTASKLOG_OUT("Now running pre processing module " + QString::number(i+1) + " ...");
 
         callCmd=mode->getPreprocCmdLine(i);
-        process.setWorkingDirectory(YSRA->staticConfig.workPath);
+        processWorkingDirectory=YSRA->staticConfig.workPath;
 
         if (!executeCommand())
         {
@@ -101,10 +105,11 @@ bool ysProcess::runReconstruction()
     YS_SYSTASKLOG_OUT("Now running reconstruction module...");
 
     callCmd=mode->getReconCmdLine();
-    process.setWorkingDirectory(YSRA->staticConfig.workPath);
+    processWorkingDirectory=YSRA->staticConfig.workPath;
 
     disableMemKill=mode->reconDisableMemKill;
     maxOutputIdleTime=mode->reconMaxOutputIdle;
+    currentModuleType="Reconstruction";
 
     if (!executeCommand())
     {
@@ -145,6 +150,7 @@ bool ysProcess::runPostProcessing()
 
     disableMemKill=mode->postprocDisableMemKill;
     maxOutputIdleTime=mode->postprocMaxOutputIdle;
+    currentModuleType="PostProcessing";
 
     bool postprocResult=true;
 
@@ -153,7 +159,7 @@ bool ysProcess::runPostProcessing()
         YS_SYSTASKLOG_OUT("Now running post processing module " + QString::number(i+1) + " ...");
 
         callCmd=mode->getPostprocCmdLine(i);
-        process.setWorkingDirectory(YSRA->staticConfig.workPath);
+        processWorkingDirectory=YSRA->staticConfig.workPath;
 
         if (!executeCommand())
         {
@@ -201,10 +207,11 @@ bool ysProcess::runTransfer()
     YS_SYSTASKLOG_OUT("Now running transfer module...");
 
     callCmd=mode->getTransferCmdLine();
-    process.setWorkingDirectory(transferDir);
+    processWorkingDirectory=transferDir;
 
     disableMemKill=mode->transferDisableMemKill;
     maxOutputIdleTime=mode->transferMaxOutputIdle;
+    currentModuleType="Transfer";
 
     if (!executeCommand())
     {
@@ -276,6 +283,10 @@ bool ysProcess::executeCommand()
     YS_TASKLOG("");
     YS_TASKLOG("##[EXEC START]####################################");
 
+    // Create clean new QProcess object
+    process=new QProcess();
+    process->setWorkingDirectory(processWorkingDirectory);
+
     bool execResult=true;
     terminationReason=YS_TERMINATION_NONE;
 
@@ -297,12 +308,12 @@ bool ysProcess::executeCommand()
 
     // Initialize process monitoring variables
     outputLines=0;
-    lastOutput.start();
+    lastOutput=time(0);
 
     QEventLoop q;
-    connect(&process, SIGNAL(finished(int , QProcess::ExitStatus)), &q, SLOT(quit()));
-    connect(&process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));
-    connect(&process, SIGNAL(readyReadStandardOutput()), this, SLOT(logOutput()));
+    connect(process, SIGNAL(finished(int , QProcess::ExitStatus)), &q, SLOT(quit()));
+    connect(process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));
+    connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(logOutput()));
     connect(&timeoutTimer, SIGNAL(timeout()), &q, SLOT(quit()));
     connect(memcheckTimer, SIGNAL(timeout()), this, SLOT(checkMemory()));
 
@@ -312,11 +323,11 @@ bool ysProcess::executeCommand()
     timeoutTimer.start();
 
     // Start the process. Note: The commandline and arguments need to be defined before.
-    process.setReadChannel(QProcess::StandardOutput);
-    process.setProcessChannelMode(QProcess::MergedChannels);
-    process.start(callCmd);
+    process->setReadChannel(QProcess::StandardOutput);
+    process->setProcessChannelMode(QProcess::MergedChannels);
+    process->start(callCmd);
 
-    if (process.state()==QProcess::NotRunning)
+    if (process->state()==QProcess::NotRunning)
     {
         YS_TASKLOG("ERROR: Process returned immediately.");
         YS_TASKLOG("Is the mode configuration correct?");
@@ -330,22 +341,22 @@ bool ysProcess::executeCommand()
 
     // Check for problems with the event loop: Sometimes it seems to return to quickly!
     // In this case, start a second while loop to check when the process is really finished.
-    if ((timeoutTimer.isActive()) && (process.state()==QProcess::Running))
+    if ((timeoutTimer.isActive()) && (process->state()==QProcess::Running))
     {
         timeoutTimer.stop();
         YS_SYSTASKLOG_OUT("WARNING: QEventLoop returned too early. Starting secondary loop.");
-        while ((process.state()==QProcess::Running) && (ti.elapsed()<YS_EXEC_TIMEOUT))
+        while ((process->state()==QProcess::Running) && (ti.elapsed()<YS_EXEC_TIMEOUT))
         {
             QCoreApplication::processEvents();
             YSRA->safeWait(YS_EXEC_LOOPSLEEP);
         }
 
         // If the process did not finish within the timeout duration
-        if (process.state()==QProcess::Running)
+        if (process->state()==QProcess::Running)
         {
             YS_SYSTASKLOG_OUT("WARNING: Process is still active. Killing process.");
             YSRA->currentJob->setErrorReason("Process timed out");
-            process.kill();
+            process->kill();
             execResult=false;
         }
         else
@@ -366,10 +377,10 @@ bool ysProcess::executeCommand()
             YS_SYSTASKLOG_OUT("WARNING: Process event loop timed out.");
             YS_SYSTASKLOG_OUT("WARNING: Duration since start "+QString::number(ti.elapsed())+" ms");
             execResult=false;
-            if (process.state()==QProcess::Running)
+            if (process->state()==QProcess::Running)
             {
                 YS_SYSTASKLOG_OUT("WARNING: Process is still active. Killing process.");
-                process.kill();
+                process->kill();
             }
         }
     }
@@ -380,10 +391,10 @@ bool ysProcess::executeCommand()
     YS_TASKLOG("##[EXEC END]######################################");
     YS_TASKLOG("");
 
-    if (process.exitStatus()==QProcess::CrashExit)
+    if (process->exitStatus()==QProcess::CrashExit)
     {
         YS_TASKLOG("ERROR: The process crashed.");
-        YSRA->currentJob->setErrorReason("Process crashed");
+        YSRA->currentJob->setErrorReason("Process crashed (" + currentModuleType +")");
         execResult=false;
 
         if (YSRA->shutdownRequested)
@@ -392,13 +403,13 @@ bool ysProcess::executeCommand()
             YS_TASKLOG("NOTE: Possibly the process exceeded the upstart killing timout.");
         }
     }
-    if (process.exitStatus()==QProcess::NormalExit)
+    if (process->exitStatus()==QProcess::NormalExit)
     {
-        if (process.exitCode()!=0)
+        if (process->exitCode()!=0)
         {
             execResult=false;
-            YS_TASKLOG("ERROR: The process exited normally, but reported an error (code " + QString::number(process.exitCode()) + ").");
-            YSRA->currentJob->setErrorReason("Error reported by module");
+            YS_TASKLOG("ERROR: The process exited normally, but reported an error (code " + QString::number(process->exitCode()) + ").");
+            YSRA->currentJob->setErrorReason("Error reported by module (" + currentModuleType +")");
         }
         else
         {
@@ -422,10 +433,18 @@ bool ysProcess::executeCommand()
     if (terminationReason==YS_TERMINATION_OUTPUTLIMIT)
     {
         YS_TASKLOG("ERROR: The task has been killed due to too many output lines.");
-        YSRA->currentJob->setErrorReason("Terminated due to infinite loop.");
+        YSRA->currentJob->setErrorReason("Terminated due to infinite loop");
     }
 
+    if (terminationReason==YS_TERMINATION_OUTPUTTIMEOUT)
+    {
+        YS_TASKLOG("ERROR: The task has been killed due to inactivity.");
+        YSRA->currentJob->setErrorReason("Terminated due to inactivity");
+    }
+
+
     YS_FREE(memcheckTimer);
+    YS_FREE(process);
 
     return execResult;
 }
@@ -433,9 +452,16 @@ bool ysProcess::executeCommand()
 
 void ysProcess::logOutput()
 {
-    while (process.canReadLine())
+    if (process==0)
     {
-        YS_TASKLOGPROC(process.readLine());
+        return;
+    }
+
+    while (process->canReadLine())
+    {
+        // Read the current line, but restrict the maximum length to 512 chars to
+        // avoid infinite output (if a module starts outputting binary data)
+        YS_TASKLOGPROC(process->readLine(512));
 
         // Remember how many lines were outputed. Enables detecting if the process
         // creates an unlimited number of lines (infinite loop).
@@ -444,28 +470,33 @@ void ysProcess::logOutput()
         // Kill the process if too many lines were created (assuming infinite loop)
         if (outputLines>YS_EXEC_MAXOUTPUTLINES)
         {
-            YS_SYSLOG_OUT("WARNING: Process created too much output. Assuming infinite loop.");
-            YS_SYSLOG_OUT("WARNING: Killing process.");
-            process.kill();
+            YS_SYSTASKLOG_OUT("WARNING: Process created too much output. Assuming infinite loop.");
+            YS_SYSTASKLOG_OUT("WARNING: Killing process.");
+            process->kill();
             terminationReason=YS_TERMINATION_OUTPUTLIMIT;
         }
     }
 
-    // Remember at what time the last output was created. Allow shutting down processes
+    // Remember at what time the last output was created. Allows shutting down processes
     // after too long idle time
-    lastOutput.start();
+    lastOutput=time(0);
 }
 
 
 int ysProcess::getUsedMemoryMB()
 {
+    if (process==0)
+    {
+        return 0;
+    }
+
     // TODO: Potentially also analyze for zombie state of the process
 
-    QFile memfile(QString("/proc/"+QString::number(process.pid())+"/status"));
+    QFile memfile(QString("/proc/"+QString::number(process->pid())+"/status"));
 
     if ((!memfile.open(QIODevice::ReadOnly)) || (!memfile.isReadable()))
     {
-        YS_SYSLOG_OUT("WARNING: Can't read memfile. Memkill will not work.");
+        YS_SYSTASKLOG_OUT("WARNING: Can't read memfile. Memkill will not work.");
         return -1;
     }
 
@@ -501,6 +532,11 @@ int ysProcess::getPhysicalMemoryMB()
 
 void ysProcess::checkMemory()
 {
+    if (process==0)
+    {
+        return;
+    }
+
     memcheckTimer->stop();
 
     int usedMem=getUsedMemoryMB();
@@ -517,9 +553,9 @@ void ysProcess::checkMemory()
 
         if ((memkillThreshold>0) && (percent>memkillThreshold))
         {
-            YS_SYSLOG_OUT("WARNING: Memory usage is high ("+ QString::number(usedMem) + " Mb).");
-            YS_SYSLOG_OUT("WARNING: Killing process due to lack of memory.");
-            process.kill();
+            YS_SYSTASKLOG_OUT("WARNING: Memory usage is high ("+ QString::number(usedMem) + " Mb).");
+            YS_SYSTASKLOG_OUT("WARNING: Killing process due to lack of memory.");
+            process->kill();
             terminationReason=YS_TERMINATION_MEMKILL;
             memoryDuringKill=usedMem;
         }
@@ -528,11 +564,13 @@ void ysProcess::checkMemory()
     // Check duration since last output from module (unless check is disabled).
     // Terminate process if the module didn't respond for certain time.
 
-    if ((maxOutputIdleTime>0) && (lastOutput.elapsed()>maxOutputIdleTime))
-    {
-        YS_SYSLOG_OUT("WARNING: Process did not create output for too long time.");
-        YS_SYSLOG_OUT("WARNING: Assuming hanging process. Killing task.");
-        process.kill();
+    if ((maxOutputIdleTime>0) && (difftime(time(0),lastOutput)>maxOutputIdleTime))
+    {        
+
+        YS_SYSTASKLOG_OUT("WARNING: Process did not create output for too long time (" + QString::number(difftime(time(0),lastOutput)) + " sec)");
+        YS_SYSTASKLOG_OUT("WARNING: Theshold time is " + QString::number(maxOutputIdleTime) + "sec.");
+        YS_SYSTASKLOG_OUT("WARNING: Assuming hanging process. Killing task.");
+        process->kill();
         terminationReason=YS_TERMINATION_OUTPUTTIMEOUT;
     }
 
@@ -542,9 +580,14 @@ void ysProcess::checkMemory()
 
 void ysProcess::haltAnyProcess()
 {
-    if (process.state()==QProcess::Running)
+    if (process==0)
     {
-        process.kill();
+        return;
+    }
+
+    if (process->state()==QProcess::Running)
+    {
+        process->kill();
     }
 }
 

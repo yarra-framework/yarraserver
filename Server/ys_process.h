@@ -6,6 +6,10 @@
 #include "ys_job.h"
 #include "ys_mode.h"
 
+// For timeout measurements
+#include <stdio.h>
+#include <time.h>
+
 
 class ysProcess : public QObject
 {
@@ -41,7 +45,7 @@ public:
     ysMode* mode;
 
     QString callCmd;
-    QProcess process;
+    QProcess* process;
 
     QTimer* memcheckTimer;
 
@@ -54,10 +58,13 @@ public:
     int memoryDuringKill;
     bool disableMemKill;
 
+    QString processWorkingDirectory;
+    QString currentModuleType;
+
     // Variables for detecting module problems
-    int   outputLines;
-    QTime lastOutput;
-    int   maxOutputIdleTime;
+    int    outputLines;
+    time_t lastOutput;
+    int    maxOutputIdleTime;
 
     int terminationReason;
 
