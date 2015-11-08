@@ -42,14 +42,12 @@ void ysNotificationMail::sendDiskSpaceNotification(QString dirs)
 <p><b>Warning: </b>The following server reports <b>low diskspace</b>, which may soon halt the processing of cases:</p>\n\
 <p><table border=\"0\" style=\"background-color: #EEE; border: 1px solid #000; padding-left: 6px; padding-right: 6px; border-left: 6px solid #F90; margin-top: 10px;\">\n\
 <tr><td style=\"padding-right: 20px;\">Server name:</td><td><b>%prm1%</b></td></tr>\n\
-<tr><td style=\"padding-right: 20px;\">Server type:</td><td>%prm2%</td></tr>\n\
 <tr><td style=\"padding-right: 20px;\">Affected directories:</td><td>%prm3%</td></tr>\n\
 </table>&nbsp;<br />\n\
 It is advised to immediately resolve this situation to avoid possible processing delays.</p>\n\
 </div>\n";
 
     body.replace("%prm1%", YSRA->staticConfig.serverName);
-    body.replace("%prm2%", YSRA->staticConfig.serverType);
 
     QString frmtDir=dirs;
     frmtDir.replace("; ","<br />");
@@ -76,14 +74,12 @@ void ysNotificationMail::sendDiskErrorNotification(QString dirs)
 <p><b>Important: </b>The following server is <b>out of diskspace</b>:</p>\n\
 <p><table border=\"0\" style=\"background-color: #EEE; border: 1px solid #000; padding-left: 6px; padding-right: 6px; border-left: 6px solid #CC0000; margin-top: 10px;\">\n\
 <tr><td style=\"padding-right: 20px;\">Server name:</td><td><b>%prm1%</b></td></tr>\n\
-<tr><td style=\"padding-right: 20px;\">Server type:</td><td>%prm2%</td></tr>\n\
 <tr><td style=\"padding-right: 20px;\">Affected directories:</td><td>%prm3%</td></tr>\n\
 </table>&nbsp;<br />\n\
 Cases will not be processed until sufficient diskspace becomes available.</p>\n\
 </div>\n";
 
     body.replace("%prm1%", YSRA->staticConfig.serverName);
-    body.replace("%prm2%", YSRA->staticConfig.serverType);
 
     QString frmtDir=dirs;
     frmtDir.replace("; ","<br />");

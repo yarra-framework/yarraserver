@@ -43,7 +43,7 @@ void ysLog::openSysLog()
 
     sysLog("##[START]######################################");
     sysLog("YarraServer Version " + QString(YS_VERSION)+" (Build: " + QString::fromLatin1(__DATE__) + " " + QString::fromLatin1(__TIME__) +")");
-    sysLog("Name: " + YSRA->staticConfig.serverName + ", Type: " + YSRA->staticConfig.serverType);    
+    sysLog("Name: " + YSRA->staticConfig.serverName);
 
     if (YSRA->staticConfig.useNightTasks)
     {
@@ -84,7 +84,7 @@ void ysLog::openTaskLog(QString suggestedName, QString uniqueID)
     taskLog("##[TASK START]####################################");
     taskLog("");
     taskLog("YarraServer Vesion " + QString(YS_VERSION));
-    taskLog("Name: " + YSRA->staticConfig.serverName + ", Type: " + YSRA->staticConfig.serverType);
+    taskLog("Name: " + YSRA->staticConfig.serverName);
     taskLog("");
 }
 

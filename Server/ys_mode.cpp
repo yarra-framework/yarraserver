@@ -283,6 +283,12 @@ QString ysMode::parseString(QString input, QString postprocIn, QString postprocO
         input.replace(YS_MODEMACRO_HELPER_QUOTE,replacement);
     }
 
+    if (input.contains(YS_MODEMACRO_HELPER_MATLAB))
+    {
+        QString replacement=YSRA->staticConfig.matlabBinary;
+        input.replace(YS_MODEMACRO_HELPER_MATLAB,replacement);
+    }
+
     return input;
 }
 

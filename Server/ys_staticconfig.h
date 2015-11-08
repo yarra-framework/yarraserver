@@ -8,18 +8,17 @@ class ysStaticConfig
 public:
     ysStaticConfig();
 
+    QString serverName;
+
     QString modesPath;
     QString logPath;
-
     QString inqueuePath;
     QString workPath;
     QString failPath;
     QString storagePath;
-
     QString modulesPath;
 
-    QString serverName;
-    QString serverType;
+    QString matlabBinary;
 
     bool    notificationEnabled;
     QString notificationErrorMail;
