@@ -20,7 +20,7 @@ public:
     QString getPreprocCmdLine(int i);
     QString getReconCmdLine();
     QString getPostprocCmdLine(int i);
-    QString getTransferCmdLine();
+    QString getTransferCmdLine(int i);
 
     QString name;
 
@@ -41,8 +41,9 @@ public:
     bool        postprocDisableMemKill;
     int         postprocMaxOutputIdle;
 
-    QString transferBinary;
-    QString transferArguments;
+    int transferCount;
+    QStringList transferBinary;
+    QStringList transferArguments;
     bool    transferDisableMemKill;
     int     transferMaxOutputIdle;
 

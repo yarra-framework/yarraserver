@@ -65,6 +65,7 @@ public:
     int    outputLines;
     time_t lastOutput;
     int    maxOutputIdleTime;
+    bool   errorReceived;
 
     int terminationReason;
 
@@ -73,6 +74,7 @@ public:
 public slots:
     void logOutput();
     void checkMemory();
+    void receiveProcessError(QProcess::ProcessError processError);
 
 };
 

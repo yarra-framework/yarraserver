@@ -18,6 +18,7 @@ ysProcess::ysProcess()
     process=0;
     processWorkingDirectory="";
     currentModuleType="";
+    errorReceived=false;
 }
 
 
@@ -188,7 +189,7 @@ bool ysProcess::runPostProcessing()
 bool ysProcess::runTransfer()
 {
     // Just return if no transfer module has been defined.
-    if (mode->transferBinary=="")
+    if (mode->transferCount==0)
     {
         return true;
     }
@@ -201,31 +202,32 @@ bool ysProcess::runTransfer()
         YS_SYSTASKLOG_OUT("WARNING: Transfer directory contains no files.");
     }
 
-
-    bool transferResult=true;
-
-    YS_SYSTASKLOG_OUT("Now running transfer module...");
-
-    callCmd=mode->getTransferCmdLine();
-    processWorkingDirectory=transferDir;
-
     disableMemKill=mode->transferDisableMemKill;
     maxOutputIdleTime=mode->transferMaxOutputIdle;
     currentModuleType="Transfer";
 
-    if (!executeCommand())
-    {
-        YS_TASKLOG("Transfer failed.");
-        transferResult=false;
-    }
-    else
-    {
-        YS_TASKLOG("Transfer finished.");
-        transferResult=true;
-    }
+    bool transferResult=true;
 
-    YS_TASKLOG("Cleaning temporary files.");
-    cleanTmpDir();
+    for (int i=0; i<mode->transferCount; i++)
+    {
+        YS_SYSTASKLOG_OUT("Now running transfer module " + QString::number(i+1) + " ...");
+
+        processWorkingDirectory=transferDir;
+        callCmd=mode->getTransferCmdLine(i);
+
+        if (!executeCommand())
+        {
+            YS_TASKLOG("Transfer failed.");
+            transferResult=false;
+        }
+        else
+        {
+            YS_TASKLOG("Transfer finished.");
+        }
+
+        YS_TASKLOG("Cleaning temporary files.");
+        cleanTmpDir();
+    }
 
     return transferResult;
 }
@@ -309,9 +311,11 @@ bool ysProcess::executeCommand()
     // Initialize process monitoring variables
     outputLines=0;
     lastOutput=time(0);
+    errorReceived=false;
 
     QEventLoop q;
     connect(process, SIGNAL(finished(int , QProcess::ExitStatus)), &q, SLOT(quit()));
+    connect(process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(receiveProcessError(QProcess::ProcessError)));
     connect(process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));
     connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(logOutput()));
     connect(&timeoutTimer, SIGNAL(timeout()), &q, SLOT(quit()));
@@ -390,6 +394,13 @@ bool ysProcess::executeCommand()
 
     YS_TASKLOG("##[EXEC END]######################################");
     YS_TASKLOG("");
+
+    if (errorReceived)
+    {
+        // Error was received via signal during runtime. Possibly, command line not valid.
+        // Error message written by slot, does not have to be repeated here.
+        execResult=false;
+    }
 
     if (process->exitStatus()==QProcess::CrashExit)
     {
@@ -591,3 +602,16 @@ void ysProcess::haltAnyProcess()
     }
 }
 
+
+void ysProcess::receiveProcessError(QProcess::ProcessError processError)
+{
+    YS_TASKLOG("ERROR: Process error detected.");
+    errorReceived=true;
+
+    if (processError==QProcess::FailedToStart)
+    {
+        YS_TASKLOG("ERROR: Process failed to start");
+        YS_TASKLOG("Is the mode configuration correct?");
+        YSRA->currentJob->setErrorReason("Process did not start");
+    }
+}

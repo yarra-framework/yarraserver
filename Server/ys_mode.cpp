@@ -25,8 +25,9 @@ ysMode::ysMode()
     postprocDisableMemKill=false;
     postprocMaxOutputIdle=YS_EXEC_MAXOUTPUTIDLE;
 
-    transferBinary="";
-    transferArguments="";
+    transferCount=0;
+    transferBinary.clear();
+    transferArguments.clear();
     transferDisableMemKill=false;
     transferMaxOutputIdle=YS_EXEC_MAXOUTPUTIDLE;
 
@@ -52,8 +53,15 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
         // Open the mode file
         QSettings modeFile(modeFilename, QSettings::IniFormat);
 
-        // Read pre-processing settings
+        // ## Read pre-processing settings
         preprocCount=0;
+        // First, try reading the setting without index
+        if (!modeFile.value("PreProcessing/Bin",  "").toString().isEmpty())
+        {
+            preprocCount++;
+            preprocBinary.append(modeFile.value("PreProcessing/Bin",  "").toString());
+            preprocBinary.append(modeFile.value("PreProcessing/Args", "").toString());
+        }
         while ((preprocCount<YS_PROCCOUNT_MAX) &&
                (modeFile.value("PreProcessing/Bin"+QString::number(preprocCount+1), YS_INI_INVALID).toString()!=YS_INI_INVALID))
         {
@@ -64,14 +72,22 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
         preprocDisableMemKill=modeFile.value("PreProcessing/DisableMemKill", false).toBool();
         preprocMaxOutputIdle =modeFile.value("PreProcessing/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
-        // Reconstruction settings
+        // ## Reconstruction settings
         reconBinary        =modeFile.value("Reconstruction/Bin",  YS_INI_INVALID).toString();
         reconArguments     =modeFile.value("Reconstruction/Args", YS_INI_INVALID).toString();
         reconDisableMemKill=modeFile.value("Reconstruction/DisableMemKill", false).toBool();
         reconMaxOutputIdle =modeFile.value("Reconstruction/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
-        // Read post-processing settings
+        // ## Read post-processing settings
         postprocCount=0;
+        // First, try reading the setting without index
+        if (!modeFile.value("PostProcessing/Bin",  "").toString().isEmpty())
+        {
+            postprocCount++;
+            postprocBinary.append(modeFile.value("PostProcessing/Bin",  "").toString());
+            postprocBinary.append(modeFile.value("PostProcessing/Args", "").toString());
+        }
+        // Now read settings with index
         while ((postprocCount<YS_PROCCOUNT_MAX) &&
                (modeFile.value("PostProcessing/Bin"+QString::number(postprocCount+1), YS_INI_INVALID).toString()!=YS_INI_INVALID))
         {
@@ -82,13 +98,28 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
         postprocDisableMemKill=modeFile.value("PostProcessing/DisableMemKill", false).toBool();
         postprocMaxOutputIdle =modeFile.value("PostProcessing/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
-        // Read transfer settings
-        transferBinary        =modeFile.value("Transfer/Bin",  "").toString();
-        transferArguments     =modeFile.value("Transfer/Args", "").toString();
+        // ## Read transfer settings
+        transferCount=0;
+        // First, try reading the setting without index
+        if (!modeFile.value("Transfer/Bin",  "").toString().isEmpty())
+        {
+            transferCount++;
+            transferBinary   .append(modeFile.value("Transfer/Bin",  "").toString());
+            transferArguments.append(modeFile.value("Transfer/Args", "").toString());
+        }
+        // Now go through the settings with index
+        while ((transferCount<YS_PROCCOUNT_MAX) &&
+               (modeFile.value("Transfer/Bin"+QString::number(transferCount+1), YS_INI_INVALID).toString()!=YS_INI_INVALID))
+        {
+            transferCount++;
+            transferBinary   .append(modeFile.value("Transfer/Bin" +QString::number(transferCount), "").toString());
+            transferArguments.append(modeFile.value("Transfer/Args"+QString::number(transferCount), "").toString());
+        }
+        // General transfer settings
         transferDisableMemKill=modeFile.value("Transfer/DisableMemKill", false).toBool();
         transferMaxOutputIdle =modeFile.value("Transfer/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
-        // Read the additional options from the mode file
+        // ## Read the additional options from the mode file
         currentJob->storeProcessedFile=modeFile.value("Options/KeepRawdata", false).toBool();
     }
 
@@ -122,8 +153,11 @@ void ysMode::parseCmdlines()
     }
 
     // Read transfer settings
-    transferBinary   =parseString(transferBinary);
-    transferArguments=parseString(transferArguments);
+    for (int i=0; i<transferCount; i++)
+    {
+        transferBinary.replace(i,parseString(transferBinary.at(i)));
+        transferArguments.replace(i,parseString(transferArguments.at(i)));
+    }
 }
 
 
@@ -133,9 +167,14 @@ QString ysMode::getReconCmdLine()
 }
 
 
-QString ysMode::getTransferCmdLine()
+QString ysMode::getTransferCmdLine(int i)
 {
-    return transferBinary + " " + transferArguments;
+    if (i>=transferCount)
+    {
+        return "";
+    }
+
+    return transferBinary.at(i) + " " + transferArguments.at(i);
 }
 
 
