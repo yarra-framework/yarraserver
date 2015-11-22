@@ -315,7 +315,7 @@ bool ysProcess::executeCommand()
 
     QEventLoop q;
     connect(process, SIGNAL(finished(int , QProcess::ExitStatus)), &q, SLOT(quit()));
-    connect(process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(receiveProcessError(QProcess::ProcessError)));
+    connect(process, SIGNAL(error(QProcess::ProcessError)), this, SLOT(receiveProcessError(QProcess::ProcessError)));
     connect(process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));
     connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(logOutput()));
     connect(&timeoutTimer, SIGNAL(timeout()), &q, SLOT(quit()));
@@ -414,7 +414,7 @@ bool ysProcess::executeCommand()
             YS_TASKLOG("NOTE: Possibly the process exceeded the upstart killing timout.");
         }
     }
-    if (process->exitStatus()==QProcess::NormalExit)
+    if ((execResult) && (process->exitStatus()==QProcess::NormalExit))
     {
         if (process->exitCode()!=0)
         {
@@ -538,7 +538,7 @@ int ysProcess::getPhysicalMemoryMB()
 {
     int totalMem=qint64(sysconf(_SC_PAGESIZE)) * qint64(sysconf(_SC_PHYS_PAGES)) / (1024*1024);
     return totalMem;
- }
+}
 
 
 void ysProcess::checkMemory()
@@ -577,7 +577,6 @@ void ysProcess::checkMemory()
 
     if ((maxOutputIdleTime>0) && (difftime(time(0),lastOutput)>maxOutputIdleTime))
     {        
-
         YS_SYSTASKLOG_OUT("WARNING: Process did not create output for too long time (" + QString::number(difftime(time(0),lastOutput)) + " sec)");
         YS_SYSTASKLOG_OUT("WARNING: Theshold time is " + QString::number(maxOutputIdleTime) + "sec.");
         YS_SYSTASKLOG_OUT("WARNING: Assuming hanging process. Killing task.");
@@ -611,7 +610,13 @@ void ysProcess::receiveProcessError(QProcess::ProcessError processError)
     if (processError==QProcess::FailedToStart)
     {
         YS_TASKLOG("ERROR: Process failed to start");
-        YS_TASKLOG("Is the mode configuration correct?");
+        YS_TASKLOG("ERROR: Is the mode configuration (binary path) correct?");
         YSRA->currentJob->setErrorReason("Process did not start");
+    }
+
+    if (processError==QProcess::Crashed)
+    {
+        YS_TASKLOG("ERROR: Process crashed");
+        YSRA->currentJob->setErrorReason("Process crashed (" + currentModuleType +")");
     }
 }

@@ -59,8 +59,8 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
         if (!modeFile.value("PreProcessing/Bin",  "").toString().isEmpty())
         {
             preprocCount++;
-            preprocBinary.append(modeFile.value("PreProcessing/Bin",  "").toString());
-            preprocBinary.append(modeFile.value("PreProcessing/Args", "").toString());
+            preprocBinary   .append(modeFile.value("PreProcessing/Bin",  "").toString());
+            preprocArguments.append(modeFile.value("PreProcessing/Args", "").toString());
         }
         while ((preprocCount<YS_PROCCOUNT_MAX) &&
                (modeFile.value("PreProcessing/Bin"+QString::number(preprocCount+1), YS_INI_INVALID).toString()!=YS_INI_INVALID))
@@ -84,8 +84,8 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
         if (!modeFile.value("PostProcessing/Bin",  "").toString().isEmpty())
         {
             postprocCount++;
-            postprocBinary.append(modeFile.value("PostProcessing/Bin",  "").toString());
-            postprocBinary.append(modeFile.value("PostProcessing/Args", "").toString());
+            postprocBinary   .append(modeFile.value("PostProcessing/Bin",  "").toString());
+            postprocArguments.append(modeFile.value("PostProcessing/Args", "").toString());
         }
         // Now read settings with index
         while ((postprocCount<YS_PROCCOUNT_MAX) &&

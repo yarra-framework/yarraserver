@@ -39,7 +39,7 @@ void ysServer::aboutToQuitApp()
 bool ysServer::prepare()
 {
     YS_OUT("YarraServer - Version " + QString(YS_VERSION));
-    YS_OUT("=========================");
+    YS_OUT("============================");
     YS_OUT("");
     YS_OUT("Build: " + QString(__DATE__) + " " + QString(__TIME__));
     YS_OUT("");
