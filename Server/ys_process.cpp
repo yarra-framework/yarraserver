@@ -3,6 +3,7 @@
 #include "ys_global.h"
 #include "ys_queue.h"
 
+#include <unistd.h>
 
 ysProcess::ysProcess()
 {
