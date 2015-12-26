@@ -264,6 +264,12 @@ QString ysMode::parseString(QString input, QString postprocIn, QString postprocO
         input.replace(YS_MODEMACRO_MODULES_PATH,replacement);
     }
 
+    if (input.contains(YS_MODEMACRO_MODULES_USER_PATH))
+    {
+        QString replacement=YSRA->staticConfig.modulesUserPath;
+        input.replace(YS_MODEMACRO_MODULES_USER_PATH,replacement);
+    }
+
     if (input.contains(YS_MODEMACRO_MODE_PATH))
     {
         QString replacement=YSRA->staticConfig.modesPath;

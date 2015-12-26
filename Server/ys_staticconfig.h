@@ -17,6 +17,7 @@ public:
     QString failPath;
     QString storagePath;
     QString modulesPath;
+    QString modulesUserPath;
 
     QString matlabBinary;
 

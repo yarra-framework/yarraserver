@@ -10,13 +10,14 @@ ysStaticConfig::ysStaticConfig()
 
     execPath=QCoreApplication::applicationDirPath();
 
-    logPath=execPath+"/log";
-    modesPath=execPath+"/modes";
-    inqueuePath=execPath+"/queue";
-    workPath=execPath+"/work";
-    failPath=execPath+"/fail";
-    storagePath=execPath+"/finished";
-    modulesPath=execPath+"/modules";
+    logPath        =execPath+"/log";
+    modesPath      =execPath+"/modes";
+    inqueuePath    =execPath+"/queue";
+    workPath       =execPath+"/work";
+    failPath       =execPath+"/fail";
+    storagePath    =execPath+"/finished";
+    modulesPath    =execPath+"/modules";
+    modulesUserPath=execPath+"/modules_user";
 
     matlabBinary="/usr/local/bin/matlab";
 
@@ -51,16 +52,18 @@ bool ysStaticConfig::readConfiguration()
     {
         QSettings configFile(configurationFile, QSettings::IniFormat);
 
-        serverName  =configFile.value("Server/Name",       serverName).toString();
+        serverName     =configFile.value("Server/Name",       serverName).toString();
 
-        logPath     =configFile.value("Paths/Log",         logPath).toString();
-        modesPath   =configFile.value("Paths/Modes",       modesPath).toString();
-        inqueuePath =configFile.value("Paths/Queue",       inqueuePath).toString();
-        workPath    =configFile.value("Paths/Work",        workPath).toString();
-        failPath    =configFile.value("Paths/Fail",        failPath).toString();
-        storagePath =configFile.value("Paths/Storage",     storagePath).toString();
-        modulesPath =configFile.value("Paths/Modules",     modulesPath).toString();
-        matlabBinary=configFile.value("Paths/MatlabBinary",matlabBinary).toString();
+        logPath        =configFile.value("Paths/Log",         logPath).toString();
+        modesPath      =configFile.value("Paths/Modes",       modesPath).toString();
+        inqueuePath    =configFile.value("Paths/Queue",       inqueuePath).toString();
+        workPath       =configFile.value("Paths/Work",        workPath).toString();
+        failPath       =configFile.value("Paths/Fail",        failPath).toString();
+        storagePath    =configFile.value("Paths/Storage",     storagePath).toString();
+        modulesPath    =configFile.value("Paths/Modules",     modulesPath).toString();
+        modulesUserPath=configFile.value("Paths/ModulesUser", modulesUserPath).toString();
+
+        matlabBinary   =configFile.value("Paths/MatlabBinary",matlabBinary).toString();
 
         notificationEnabled    =configFile.value("Notification/Enabled",     notificationEnabled).toBool();
         notificationFromAddress=configFile.value("Notification/FromAddress", notificationFromAddress).toString();
@@ -103,13 +106,14 @@ bool ysStaticConfig::checkDirectories()
     bool dirError=false;
     QString affectedDirectories="";
 
-    if (!QFile::exists(modesPath))   { dirError=true; affectedDirectories+=modesPath  +" "; }
-    if (!QFile::exists(logPath))     { dirError=true; affectedDirectories+=logPath    +" "; }
-    if (!QFile::exists(inqueuePath)) { dirError=true; affectedDirectories+=inqueuePath+" "; }
-    if (!QFile::exists(workPath))    { dirError=true; affectedDirectories+=workPath   +" "; }
-    if (!QFile::exists(failPath))    { dirError=true; affectedDirectories+=failPath   +" "; }
-    if (!QFile::exists(storagePath)) { dirError=true; affectedDirectories+=storagePath+" "; }
-    if (!QFile::exists(modulesPath)) { dirError=true; affectedDirectories+=modulesPath+" "; }
+    if (!QFile::exists(modesPath))       { dirError=true; affectedDirectories+=modesPath      +" "; }
+    if (!QFile::exists(logPath))         { dirError=true; affectedDirectories+=logPath        +" "; }
+    if (!QFile::exists(inqueuePath))     { dirError=true; affectedDirectories+=inqueuePath    +" "; }
+    if (!QFile::exists(workPath))        { dirError=true; affectedDirectories+=workPath       +" "; }
+    if (!QFile::exists(failPath))        { dirError=true; affectedDirectories+=failPath       +" "; }
+    if (!QFile::exists(storagePath))     { dirError=true; affectedDirectories+=storagePath    +" "; }
+    if (!QFile::exists(modulesPath))     { dirError=true; affectedDirectories+=modulesPath    +" "; }
+    if (!QFile::exists(modulesUserPath)) { dirError=true; affectedDirectories+=modulesUserPath+" "; }
 
     if (dirError)
     {

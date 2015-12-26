@@ -5,7 +5,7 @@
 #include <QtCore>
 #include "ys_runtimeaccess.h"
 
-#define YS_VERSION          "0.91"
+#define YS_VERSION          "0.92b1"
 #define YS_SLEEP_INTERVAL   10
 #define YS_CI_ID            "YarraServer"
 #define YS_CI_SETUPTIMOUT   1000
@@ -68,7 +68,9 @@
 
 #define YS_MODEMACRO_TRANSFER_PATH        "%td"
 #define YS_MODEMACRO_TEMPPATH             "%tmp"
+
 #define YS_MODEMACRO_MODULES_PATH         "%bd"
+#define YS_MODEMACRO_MODULES_USER_PATH    "%bu"
 
 #define YS_MODEMACRO_MODE_PATH            "%md"
 #define YS_MODEMACRO_MODE_FILE            "%mf"
