@@ -16,15 +16,35 @@ ysLog::~ysLog()
 }
 
 
-
 void ysLog::openSysLog()
 {
     QString logFilename=YSRA->staticConfig.logPath+"/"+YS_LOG_SERVER;
 
-    sysLogFile.setFileName(logFilename);
-    sysLogFile.open(QIODevice::Append | QIODevice::Text);
+    sysLogFile.setFileName(logFilename);    
+    if (!sysLogFile.open(QIODevice::Append | QIODevice::Text))
+    {
+        YS_OUT("ERROR: Cannot open system log file.");
+    }
 
-    if (sysLogFile.size() > 100000000)
+    limitSysLogSize();
+
+    sysLog("##[START]######################################");
+    sysLog("YarraServer Version " + QString(YS_VERSION)+" (Build: " + QString::fromLatin1(__DATE__) + " " + QString::fromLatin1(__TIME__) +")");
+    sysLog("Name: " + YSRA->staticConfig.serverName);
+
+    if (YSRA->staticConfig.useNightTasks)
+    {
+        sysLog("Night time restriction from " + YSRA->staticConfig.nightStart.toString(Qt::ISODate) + " to " + YSRA->staticConfig.nightEnd.toString(Qt::ISODate));
+    }
+}
+
+
+void ysLog::limitSysLogSize()
+{
+    QString logFilename=YSRA->staticConfig.logPath+"/"+YS_LOG_SERVER;
+
+    // Clear log if bigger than 1Mb
+    if (sysLogFile.size() > 1000000)
     {
         YS_OUT("Size of syslog getting large.");
         YS_OUT("Renaming file and creating empty file.");
@@ -38,16 +58,11 @@ void ysLog::openSysLog()
 
         sysLogFile.close();
         sysLogFile.setFileName(logFilename);
-        sysLogFile.open(QIODevice::Append | QIODevice::Text);
-    }
 
-    sysLog("##[START]######################################");
-    sysLog("YarraServer Version " + QString(YS_VERSION)+" (Build: " + QString::fromLatin1(__DATE__) + " " + QString::fromLatin1(__TIME__) +")");
-    sysLog("Name: " + YSRA->staticConfig.serverName);
-
-    if (YSRA->staticConfig.useNightTasks)
-    {
-        sysLog("Night time restriction from " + YSRA->staticConfig.nightStart.toString(Qt::ISODate) + " to " + YSRA->staticConfig.nightEnd.toString(Qt::ISODate));
+        if (!sysLogFile.open(QIODevice::Append | QIODevice::Text))
+        {
+            YS_OUT("ERROR: Cannot open system log file.");
+        }
     }
 }
 

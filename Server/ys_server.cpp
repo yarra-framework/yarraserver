@@ -237,6 +237,10 @@ bool ysServer::runLoop()
                 queue.checkAndSendDiskSpaceNotification();
 
                 YS_SYSLOG_OUT("Job has finished.\n");
+
+                // Check if system log is too large. If so, rename and create empty file
+                log.limitSysLogSize();
+
                 YS_SYSLOG_OUT(YS_WAITMESSAGE);
             }           
         }

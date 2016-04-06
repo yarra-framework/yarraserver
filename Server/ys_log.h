@@ -28,6 +28,8 @@ public:
     QString getTaskLogFilename();
     void flushLogs();
 
+    void limitSysLogSize();
+
 protected:
 
     QString taskLogFilename;
