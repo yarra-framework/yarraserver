@@ -120,7 +120,7 @@ bool ysMode::readModeSettings(QString modeName, ysJob* job)
         transferMaxOutputIdle =modeFile.value("Transfer/MaxOutputIdle", YS_EXEC_MAXOUTPUTIDLE).toInt();
 
         // ## Read the additional options from the mode file
-        currentJob->storeProcessedFile=modeFile.value("Options/KeepRawdata", false).toBool();
+        currentJob->storeProcessedFile=modeFile.value("Options/KeepRawdata", true).toBool();
     }
 
     return true;
