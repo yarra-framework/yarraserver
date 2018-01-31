@@ -1,0 +1,25 @@
+[Unit]
+Description=Yarra Server
+Documentation=http://yarra.rocks
+After=smbd.service
+Requires=smbd.service
+
+[Service]
+Type=simple
+
+Environment=QTLIB=/home/yarraserver/Qt5.2.1/5.2.1/gcc_64/lib
+Environment=LD_LIBRARY_PATH="$QTLIB:$LD_LIBRARY_PATH"
+
+User=yarraserver
+WorkingDirectory=/home/yarraserver/yarra
+ExecStart=/home/yarraserver/yarra/YarraServer --force
+
+Restart=on-failure
+RestartSec=3
+
+KillSignal=SIGURG
+TimeoutStopSec=43800
+
+[Install]
+WantedBy=multi-user.target
+
