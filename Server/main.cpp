@@ -30,13 +30,11 @@ struct ysHaltDetection
         instancePtr->setShutdownRequest();
     }
 
-
     static void preventHUP(int)
     {
         // Prevents that the server will be shutdown when the terminal is closed.
     }
 };
-
 
 
 int main(int argc, char *argv[])
@@ -59,7 +57,8 @@ int main(int argc, char *argv[])
     // 10ms it will start the execution in the MainClass.run routine;
     QTimer::singleShot(0, &instance, SLOT(run()));
 
-    int result=app.exec();
+    app.exec();
+    int result=instance.returnCode;
 
     YS_OUT("");
     return result;

@@ -52,6 +52,7 @@ public:
 
     bool shutdownRequested;
     bool haltRequested;
+    int  returnCode;
 };
 
 

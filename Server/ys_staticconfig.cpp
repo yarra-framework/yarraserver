@@ -36,6 +36,8 @@ ysStaticConfig::ysStaticConfig()
     nightStart=QTime(23,0);
     nightEnd=QTime(5,0);
     nightAfterMidnight=false;
+
+    terminateAfterOneTask=false;
 }
 
 
@@ -75,6 +77,8 @@ bool ysStaticConfig::readConfiguration()
         memkillThreshold=configFile.value("Options/MemKillThreshold", memkillThreshold).toDouble();
         driveSpaceNeededGB=configFile.value("Options/DriveSpaceNeeded", driveSpaceNeededGB).toInt();
         driveSpaceNotificationThresholdGB=configFile.value("Options/DriveSpaceNotificationThreshold", driveSpaceNotificationThresholdGB).toInt();
+
+        terminateAfterOneTask=configFile.value("Options/TerminateAfterOneTask", terminateAfterOneTask).toBool();
 
         useNightTasks=configFile.value("Options/UseNightTasks", useNightTasks).toBool();
         nightStart=QTime::fromString(configFile.value("Options/NightStart", nightStart.toString(Qt::ISODate)).toString(),Qt::ISODate);
