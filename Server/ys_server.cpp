@@ -11,6 +11,7 @@ ysServer::ysServer(QObject *parent) :
     shutdownRequested=false;
     haltRequested=false;
     currentJob=0;
+    returnCode=0;
 }
 
 
@@ -19,6 +20,10 @@ void ysServer::run()
     if (prepare())
     {
         runLoop();
+    }
+    else
+    {
+        returnCode=1;
     }
 
     quit();
@@ -62,6 +67,11 @@ bool ysServer::prepare()
     log.openSysLog();
     YS_SYSLOG_OUT("Initializing server...");
 
+    if (staticConfig.terminateAfterOneTask)
+    {
+        YS_SYSLOG_OUT("Server will terminate after one task.");
+    }
+
     // Prepare the dynamic configuration
     if (!dynamicConfig.prepare())
     {
@@ -96,7 +106,6 @@ bool ysServer::runLoop()
 {
     shutdownRequested=false;
 
-
     // Check if controlInterface setup was successful
     if (!controlInterface.prepare())
     {
@@ -106,9 +115,9 @@ bool ysServer::runLoop()
         YS_OUT("If the server is not running, this behavior might result from a previous crash.");
         YS_OUT("Start the server with parameter --force to enforce a restart.");
 
+        returnCode=1;
         return false;
     }
-
 
     YS_OUT("Server running (threadID " + QString::number((long)this->thread()->currentThreadId()) + ")");
     YS_SYSLOG_OUT("");
@@ -117,6 +126,14 @@ bool ysServer::runLoop()
     // Check if files from a former reconstruction exist in the work directory. This could be
     // the case if the server was powered off while a reconstruction was running.
     queue.checkForCrashedTask();
+
+    // In the terminate-after-task mode, default the return code to error to ensure that
+    // all error scenarios are captured. If the task is completed successfully, it will
+    // be set to zero.
+    if (staticConfig.terminateAfterOneTask)
+    {
+        returnCode=1;
+    }
 
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
@@ -223,6 +240,13 @@ bool ysServer::runLoop()
 
                     YS_SYSTASKLOG("Processing of task was successful.");
                     notification.sendSuccessNotification(currentJob);
+
+                    // In the terminate-after-task mode, the default return code is 1.
+                    // Explicitly set it to 0 to allow detection that the task was successful.
+                    if (staticConfig.terminateAfterOneTask)
+                    {
+                        returnCode=0;
+                    }
                 }
 
                 // Delete all temporary files
@@ -241,8 +265,17 @@ bool ysServer::runLoop()
                 // Check if system log is too large. If so, rename and create empty file
                 log.limitSysLogSize();
 
-                YS_SYSLOG_OUT(YS_WAITMESSAGE);
+                if ((!shutdownRequested) && (!staticConfig.terminateAfterOneTask))
+                {
+                    YS_SYSLOG_OUT(YS_WAITMESSAGE);
+                }
             }           
+        }
+
+        // If only one task should be processed per server run, shutdown the server now
+        if (staticConfig.terminateAfterOneTask)
+        {
+            shutdownRequested=true;
         }
 
         // Sleep for 50ms to prevent excessive CPU usage during idle times
@@ -257,7 +290,6 @@ bool ysServer::runLoop()
 
     return true;
 }
-
 
 
 void ysServer::forceHalt()

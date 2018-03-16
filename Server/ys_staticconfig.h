@@ -26,7 +26,6 @@ public:
     QString notificationFromAddress;
     QString notificationDomainRestriction;
 
-
     double memkillThreshold;
     int    driveSpaceNeededGB;
     int    driveSpaceNotificationThresholdGB;
@@ -37,6 +36,8 @@ public:
     QTime nightStart;
     QTime nightEnd;
     bool nightAfterMidnight;
+
+    bool terminateAfterOneTask;
 
     bool readConfiguration();
     bool checkDirectories();
