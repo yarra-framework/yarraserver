@@ -22,8 +22,16 @@ subMainClass::subMainClass(QObject *parent) :
     QObject(parent)
 {
     keepSourceImages=false;
-    baselineSeries=true;
-    returnValue=0;
+    baselineSeries  =true;
+    returnValue     =0;
+    subtractionMode =SUB_CHOPNEGATIVE;
+    seriesOffset=0;
+}
+
+
+subMainClass::~subMainClass()
+{
+    disposeBaseline();
 }
 
 
@@ -92,6 +100,8 @@ void subMainClass::processPostProc()
         return;
     }
 
+    generateUIDs();
+
     if (!readBaseline())
     {
         OUT("ERROR: Unable to read baseline images.");
@@ -105,6 +115,8 @@ void subMainClass::processPostProc()
         returnValue=1;
         return;
     }
+
+    disposeBaseline();
 
     if (keepSourceImages)
     {
@@ -120,25 +132,122 @@ void subMainClass::processPostProc()
 }
 
 
+void subMainClass::setSeriesStateRange(QString minSeries, QString maxSeries, bool value)
+{
+    bool convOK=true;
+
+    int minIndex=minSeries.toInt(&convOK);
+
+    if ((!convOK) || (minIndex >= seriesCount))
+    {
+        return;
+    }
+    if (minIndex < 0)
+    {
+        minIndex=0;
+    }
+
+    int maxIndex=maxSeries.toInt(&convOK);
+
+    if ((!convOK) || (maxIndex < 0))
+    {
+        return;
+    }
+
+    if (maxIndex >= seriesCount)
+    {
+        maxIndex=seriesCount-1;
+    }
+
+    for (int i=minIndex; i<=maxIndex; i++)
+    {
+        seriesState.setBit(i, value);
+    }
+}
+
+
 bool subMainClass::readConfig(QString modeFilePath)
 {
     QSettings settings(modeFilePath, QSettings::IniFormat);
 
-    baselineSeries  =settings.value(SUB_MODE_ID+"/BaselineSeries", 0).toInt();
+    baselineSeries  =settings.value(SUB_MODE_ID+"/BaselineSeries",   0).toInt();
     keepSourceImages=settings.value(SUB_MODE_ID+"/KeepSourceImages", false).toBool();
+    subtractionMode =settings.value(SUB_MODE_ID+"/SubtractionMode",  SUB_CHOPNEGATIVE).toInt();
+    seriesOffset    =settings.value(SUB_MODE_ID+"/SeriesOffset",     0).toInt();
+
+    QStringList includeString=settings.value(SUB_MODE_ID+"/IncludeSeries","").toStringList();
+    QStringList excludeString=settings.value(SUB_MODE_ID+"/ExcludeSeries","").toStringList();
 
     seriesState.clear();
+    seriesState.resize(seriesCount);
+    seriesState.fill(false);
 
-    /*
-        // Now read the keys that should be patched with the values specified in the .mode file
-        settings.beginGroup(IP_MODE_ID2);
-        keys = settings.allKeys();
-
-        for (int i=0; i<keys.count(); i++)
+    // Evaluate the include-series setting
+    if (includeString.isEmpty())
+    {
+        // Normally, the stringlist should never be empty. But to be sure...
+        seriesState.fill(true);
+    }
+    else
+    {
+        if ((includeString.at(0).isEmpty()) || (includeString.at(0).contains("all",Qt::CaseInsensitive)))
         {
-            values.append(settings.value(keys.at(i), "").toString());
+            seriesState.fill(true);
         }
-    */
+        else
+        {
+            for (int i=0; i<includeString.count(); i++)
+            {
+                if (includeString.at(i).contains("-"))
+                {
+                    QStringList rangeStringList=includeString.at(i).split("-");
+                    QString minString=rangeStringList.at(0);
+                    QString maxString=rangeStringList.at(1);
+
+                    setSeriesStateRange(minString, maxString, true);
+                }
+                else
+                {
+                    bool convOK=true;
+                    int seriesIndex=includeString.at(i).toInt(&convOK);
+
+                    if ((convOK) && (seriesIndex>=0) && (seriesIndex<seriesCount))
+                    {
+                        seriesState.setBit(seriesIndex,true);
+                    }
+                }
+            }
+        }
+    }
+
+    // Evaluate the exclude-series setting
+    for (int i=0; i<excludeString.count(); i++)
+    {
+        // If no entry is given in the config, the stringlist will still contain an empy string
+        if ((i==0) && (excludeString.at(0).isEmpty()))
+        {
+            break;
+        }
+
+        if (excludeString.at(i).contains("-"))
+        {
+            QStringList rangeStringList=excludeString.at(i).split("-");
+            QString minString=rangeStringList.at(0);
+            QString maxString=rangeStringList.at(1);
+
+            setSeriesStateRange(minString, maxString, false);
+        }
+        else
+        {
+            bool convOK=true;
+            int seriesIndex=excludeString.at(i).toInt(&convOK);
+
+            if ((convOK) && (seriesIndex>=0) && (seriesIndex<seriesCount))
+            {
+                seriesState.setBit(seriesIndex,false);
+            }
+        }
+    }
 
     OUT("Using series " + QString::number(baselineSeries) + " as baseline.");
 
@@ -167,24 +276,87 @@ bool subMainClass::generateUIDs()
 
 bool subMainClass::readBaseline()
 {
+    baselineImages.clear();
+
+    for (int i=0; i<fileList.count(); i++)
+    {
+        if (fileList.at(i).seriesNumber==baselineSeries)
+        {
+            DcmFileFormat fileformat;
+            OFCondition status = fileformat.loadFile(fileList.at(i).fileName.toUtf8());
+
+            if (!status.good())
+            {
+                OUT("ERROR: Cannot open baseline file " + fileList.at(i).fileName);
+                return false;
+            }
+
+            Uint16 rows=0;
+            Uint16 cols=0;
+            fileformat.getDataset()->findAndGetUint16(DCM_Rows, rows);
+            fileformat.getDataset()->findAndGetUint16(DCM_Columns, cols);
+
+            DcmDataset *dataset = fileformat.getDataset();
+            const Uint16* pixelData = NULL;
+
+            if (!dataset->findAndGetUint16Array(DCM_PixelData, pixelData).good())
+            {
+                OUT("ERROR: Cannot read baseline data from " + fileList.at(i).fileName);
+                return false;
+            }
+
+            Uint16* buffer=new Uint16[rows*cols];
+            memcpy(buffer,pixelData,rows*cols*sizeof(Uint16));
+
+            baselineImages.append(subBaselineSlice(cols,rows,fileList.at(i).sliceNumber,buffer));
+        }
+    }
+
     return true;
+}
+
+
+void subMainClass::disposeBaseline()
+{
+    for (int i=0; i<baselineImages.count(); i++)
+    {
+        if (baselineImages.at(i).pixelData != 0)
+        {
+            delete[] baselineImages.at(i).pixelData;
+        }
+    }
+
+    baselineImages.clear();
 }
 
 
 bool subMainClass::createSubtractions(QString outputPath)
 {
+    int processedFiles=0;
+
     for (int i=0; i<fileList.count(); i++)
     {
-        if (fileList.at(i).seriesNumber > baselineSeries)
+        if ((fileList.at(i).seriesNumber > baselineSeries)
+            && (seriesState.at(fileList.at(i).seriesNumber))
+           )
         {
-            // Calculate the new series number (by using the input series count as offset)
-            int newSeriesNumber=fileList.at(i).seriesNumber+seriesCount;
+            int newSeriesNumber=fileList.at(i).seriesNumber;
+
+            // When keeping the input images, add the input series count as offset for the series number
+            if (keepSourceImages)
+            {
+                newSeriesNumber+=seriesCount;
+            }
+
             QString outputFilename=outputPath+QString("/sub_%1.%2.dcm").arg(newSeriesNumber,4,10,QLatin1Char('0')).arg(fileList.at(i).sliceNumber,4,10,QLatin1Char('0'));
 
-            OUT("Processing " + fileList.at(i).fileName);
+            //OUT("Processing " + fileList.at(i).fileName);
             processDICOM(fileList.at(i).fileName, outputFilename, fileList.at(i).sliceNumber, fileList.at(i).seriesNumber, newSeriesNumber);
+            processedFiles++;
         }
     }
+
+    OUT(QString::number(processedFiles) + " files processed.");
 
     return true;
 }
@@ -206,7 +378,6 @@ bool subMainClass::processDICOM(QString inFilename, QString outFilename, int sli
     fileformat.getDataset()->findAndGetUint16(DCM_Rows, rows);
     fileformat.getDataset()->findAndGetUint16(DCM_Columns, cols);
 
-    /* get reference to dataset from the fileformat */
     DcmDataset *dataset = fileformat.getDataset();
     const Uint16* pixelData = NULL;
 
@@ -216,32 +387,112 @@ bool subMainClass::processDICOM(QString inFilename, QString outFilename, int sli
         return false;
     }
 
-    OUT("Image dim = " + QString::number(cols) + " x " + QString::number(rows));
+    //OUT("Image dim = " + QString::number(cols) + " x " + QString::number(rows));
+
+    int baselineIndex=-1;
+
+    for (int i=0; i<baselineImages.count(); i++)
+    {
+        if (baselineImages.at(i).slice==slice)
+        {
+            baselineIndex=i;
+            break;
+        }
+    }
+
+    if (baselineIndex<0)
+    {
+        OUT("ERROR: Unable to find reference slice for file " + inFilename);
+        return false;
+    }
+
+    if ( (rows!=baselineImages.at(baselineIndex).height)
+         || (cols!=baselineImages.at(baselineIndex).width) )
+    {
+        OUT("ERROR: Image dimensions do not match with baseline for " + inFilename);
+        return false;
+    }
 
     Uint16* modData=new Uint16[rows*cols];
+    Uint16* baselineData=baselineImages.at(baselineIndex).pixelData;
 
-    for (int y=0; y< rows; y++)
+    int    idx  =0;
+    int    value=0;
+
+    switch (subtractionMode)
     {
-        for (int x=0; x<cols; x++)
+    case SUB_CHOPNEGATIVE:
+    default:
+        for (int y=0; y<rows; y++)
         {
-            // TODO
+            for (int x=0; x<cols; x++)
+            {
+                idx=y*cols+x;
 
-            /*
-            if (y % 2)
-            {
-                modData[y*cols+x]=pixelData[y*cols+x];
+                value=(pixelData[idx] - baselineData[idx]);
+                if (value<0)
+                {
+                    value=0;
+                }
+
+                modData[idx]=value;
             }
-            else
-            {
-                modData[y*cols+x]=0;
-            }
-            */
         }
+        break;
+
+    case SUB_ABSOLUTE:
+        for (int y=0; y<rows; y++)
+        {
+            for (int x=0; x<cols; x++)
+            {
+                idx=y*cols+x;
+
+                value=abs(pixelData[idx] - baselineData[idx]);
+                modData[idx]=value;
+            }
+        }
+        break;
     }
 
     dataset->putAndInsertUint16Array(DCM_PixelData, modData, rows*cols);
 
-    // TODO: Write new DICOM tags
+    // Write new DICOM tags for modified images
+    dataset->putAndInsertUint16(DCM_SeriesNumber,      outSeries + seriesOffset);
+    dataset->putAndInsertString(DCM_StudyID,           studyUID.toUtf8());
+    dataset->putAndInsertString(DCM_StudyInstanceUID,  studyUID.toUtf8());
+
+    char uid[100];
+    dcmGenerateUniqueIdentifier(uid, SITE_INSTANCE_UID_ROOT);
+    dataset->putAndInsertString(DCM_SOPInstanceUID,  uid);
+
+    OFString seriesDescription;
+    if (!dataset->findAndGetOFString(DCM_SeriesDescription, seriesDescription).good())
+    {
+        OUT("WARNING: Unable to get SeriesDescription tag.")
+    }
+    else
+    {
+        seriesDescription="SUB "+seriesDescription;
+        dataset->putAndInsertOFStringArray(DCM_SeriesDescription, seriesDescription);
+    }
+
+    OFString scanningSequence;
+    if (!dataset->findAndGetOFString(DCM_ScanningSequence, scanningSequence).good())
+    {
+        OUT("WARNING: Unable to get ScanningSequence tag.")
+    }
+    else
+    {
+        scanningSequence="SUB "+scanningSequence;
+        dataset->putAndInsertOFStringArray(DCM_ScanningSequence, scanningSequence);
+    }
+
+    if ((inSeries<0) || (inSeries>=studyUID.count()))
+    {
+        OUT("ERROR: Series number exceeds UID array.");
+        return false;
+    }
+    dataset->putAndInsertString(DCM_SeriesInstanceUID, seriesUIDList.at(inSeries).toUtf8());
 
     status = fileformat.saveFile(outFilename.toUtf8(), EXS_LittleEndianExplicit);
 
@@ -270,65 +521,6 @@ bool subMainClass::moveSourceImages(QString outputPath)
 
     return true;
 }
-
-
-/*
-bool subMainClass::readDICOM(QString filename, QString outputFilename)
-{
-    DcmFileFormat fileformat;
-    OFCondition status = fileformat.loadFile(filename.toUtf8());
-
-    if (status.good())
-    {
-        Uint16 rows=0;
-        Uint16 cols=0;
-        fileformat.getDataset()->findAndGetUint16(DCM_Rows, rows);
-        fileformat.getDataset()->findAndGetUint16(DCM_Columns, cols);
-
-        // get reference to dataset from the fileformat
-        DcmDataset *dataset = fileformat.getDataset();
-        const Uint16* pixelData = NULL;
-
-        if (dataset->findAndGetUint16Array(DCM_PixelData, pixelData).good())
-        {
-        }
-
-        OUT("Image dim = " + QString::number(cols) + " x " + QString::number(rows));
-
-        //for (int i = 0; i< 10; i++)
-        //{
-        //    testDmp+=QString::number(pixelData[i]) + " ";
-        //}
-
-        Uint16* modData=new Uint16[rows*cols];
-
-        for (int y=0; y< rows; y++)
-        {
-            for (int x=0; x<cols; x++)
-            {
-                if (y % 2)
-                {
-                    modData[y*cols+x]=pixelData[y*cols+x];
-                }
-                else
-                {
-                    modData[y*cols+x]=0;
-                }
-            }
-            //testDmp+=QString::number(pixelData[i]) + " ";
-        }
-
-        dataset->putAndInsertUint16Array(DCM_PixelData, modData, rows*cols);
-        //OUT ("Pixel: "+testDmp);
-
-        delete[] modData;
-    }
-
-    status = fileformat.saveFile(outputFilename.toUtf8(), EXS_LittleEndianExplicit);
-    return true;
-}
-*/
-
 
 
 bool subMainClass::generateFileList(QString inputPath)
@@ -378,25 +570,9 @@ bool subMainClass::generateFileList(QString inputPath)
         }
     }
 
-    /*
-    bool processingError=false;
-    for (int i=0; i<allFiles.count(); i++)
-    {
-        QString sourceFile=inputPath+"/"+allFiles.at(i);
-        QString targetFile=outputPath+"/sub"+allFiles.at(i);
-        QDir inputDir;
-        if (!inputDir.cd(inputPath))
-        {
-            OUT("ERROR: Cannot enter input directory.");
-            returnValue=1;
-            return;
-        }
-    }
-    */
-
     if (!processingError)
     {
-        OUT("Highest series: " + QString::number(seriesCount));
+        OUT("Highest series is " + QString::number(seriesCount)+".");
     }
 
     return (!processingError);
