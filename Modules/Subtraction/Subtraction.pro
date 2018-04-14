@@ -8,6 +8,7 @@ CONFIG   -= app_bundle
 TEMPLATE = app
 
 SOURCES += main.cpp \
+    external/dcdictbi.cc \
     sub_mainclass.cpp
 
 HEADERS += \
@@ -23,3 +24,6 @@ LIBS += /usr/lib/libdcmdata.a
 LIBS += /usr/lib/liboflog.a
 LIBS += /usr/lib/libofstd.a
 LIBS += -lz
+
+QMAKE_CXXFLAGS += -DENABLE_BUILTIN_DICTIONARY -DENABLE_PRIVATE_TAGS
+

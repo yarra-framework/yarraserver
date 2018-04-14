@@ -104,6 +104,7 @@ public:
     bool                    keepSourceImages;
     int                     subtractionMode;
     int                     seriesOffset;
+    bool                    debug;
 
     QBitArray               seriesState;
 

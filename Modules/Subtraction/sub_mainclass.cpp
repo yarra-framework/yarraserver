@@ -13,7 +13,7 @@
 using namespace std;
 
 
-#define SUB_VER      QString("0.1a")
+#define SUB_VER      QString("0.1a2")
 #define OUT(x)       cout << QString(x).toStdString() << endl;
 #define SUB_MODE_ID  QString("Subtraction")
 
@@ -26,6 +26,7 @@ subMainClass::subMainClass(QObject *parent) :
     returnValue     =0;
     subtractionMode =SUB_CHOPNEGATIVE;
     seriesOffset=0;
+    debug=false;
 }
 
 
@@ -241,6 +242,7 @@ bool subMainClass::readConfig(QString modeFilePath)
     keepSourceImages=settings.value(SUB_MODE_ID+"/KeepSourceImages", false).toBool();
     subtractionMode =settings.value(SUB_MODE_ID+"/SubtractionMode",  SUB_CHOPNEGATIVE).toInt();
     seriesOffset    =settings.value(SUB_MODE_ID+"/SeriesOffset",     0).toInt();
+    debug           =settings.value(SUB_MODE_ID+"/Debug",            false).toBool();
 
     QStringList includeString=settings.value(SUB_MODE_ID+"/IncludeSeries","").toStringList();
     QStringList excludeString=settings.value(SUB_MODE_ID+"/ExcludeSeries","").toStringList();
@@ -399,6 +401,19 @@ void subMainClass::disposeBaseline()
 
 bool subMainClass::createSubtractions(QString outputPath)
 {
+    if (debug)
+    {
+        OUT("DEBUG INFORMATION");
+        OUT("");
+        OUT("Content of file list:");
+        for (int i=0; i<fileList.count(); i++)
+        {
+            OUT(QString("Series=%1 Slice=%2 - %3").arg(fileList.at(i).seriesNumber).arg(fileList.at(i).sliceNumber).arg(fileList.at(i).fileName));
+        }
+        OUT("");
+    }
+
+
     int processedFiles=0;
 
     for (int i=0; i<fileList.count(); i++)
@@ -418,7 +433,10 @@ bool subMainClass::createSubtractions(QString outputPath)
             QString outputFilename=outputPath+QString("/sub_%1.%2.dcm").arg(newSeriesNumber,4,10,QLatin1Char('0')).arg(fileList.at(i).sliceNumber,4,10,QLatin1Char('0'));
 
             //OUT("Processing " + fileList.at(i).fileName);
-            processDICOM(fileList.at(i).fileName, outputFilename, fileList.at(i).sliceNumber, fileList.at(i).seriesNumber, newSeriesNumber);
+            if (!processDICOM(fileList.at(i).fileName, outputFilename, fileList.at(i).sliceNumber, fileList.at(i).seriesNumber, newSeriesNumber))
+            {
+                return false;
+            }
             processedFiles++;
         }
     }
@@ -521,7 +539,14 @@ bool subMainClass::processDICOM(QString inFilename, QString outFilename, int sli
         break;
     }
 
-    dataset->putAndInsertUint16Array(DCM_PixelData, modData, rows*cols);
+    OFCondition result=dataset->putAndInsertUint16Array(DCM_PixelData, modData, rows*cols);
+
+    if (!result.good())
+    {
+        OUT("ERROR: Unable to set DICOM data.");
+        OUT("ERROR: " + QString(result.text()));
+        return false;
+    }
 
     // Write new DICOM tags for modified images
     dataset->putAndInsertUint16(DCM_SeriesNumber,      outSeries + seriesOffset);
@@ -554,7 +579,7 @@ bool subMainClass::processDICOM(QString inFilename, QString outFilename, int sli
         dataset->putAndInsertOFStringArray(DCM_ScanningSequence, scanningSequence);
     }
 
-    if ((inSeries<0) || (inSeries>=studyUID.count()))
+    if ((inSeries<0) || (inSeries>=seriesUIDList.count()))
     {
         OUT("ERROR: Series number exceeds UID array.");
         return false;
