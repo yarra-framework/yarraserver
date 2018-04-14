@@ -88,6 +88,8 @@ public:
 
     void setSeriesStateRange(QString minSeries, QString maxSeries, bool value);
 
+    int  getIndex(const QString input, bool& isOK, bool boundRange);
+
     QStringList             args;
     int                     returnValue;
 

@@ -132,36 +132,103 @@ void subMainClass::processPostProc()
 }
 
 
+int subMainClass::getIndex(const QString input, bool& isOK, bool boundRange)
+{
+    int index=0;
+
+    if (input.contains("end",Qt::CaseInsensitive))
+    {
+        int subtractOffset=0;
+
+        if (input.contains("-"))
+        {
+            QString offsetString=input;
+            offsetString.remove(0,offsetString.indexOf("-")+1);
+            subtractOffset=offsetString.toInt();
+            if (subtractOffset>seriesCount-1)
+            {
+                subtractOffset=seriesCount-1;
+            }
+        }
+
+        index=seriesCount-1-subtractOffset;
+        isOK=true;
+    }
+    else
+    {
+        index=input.toInt(&isOK);
+    }
+
+    if (isOK)
+    {
+        if (index>=seriesCount)
+        {
+            if (boundRange)
+            {
+                index=seriesCount-1;
+            }
+            else
+            {
+                isOK=false;
+            }
+        }
+
+        if (index<0)
+        {
+            if (boundRange)
+            {
+                index=0;
+            }
+            else
+            {
+                isOK=false;
+            }
+        }
+    }
+
+    return index;
+}
+
+
 void subMainClass::setSeriesStateRange(QString minSeries, QString maxSeries, bool value)
 {
     bool convOK=true;
+    int  stepSize=1;
 
-    int minIndex=minSeries.toInt(&convOK);
-
-    if ((!convOK) || (minIndex >= seriesCount))
-    {
-        return;
-    }
-    if (minIndex < 0)
-    {
-        minIndex=0;
-    }
-
-    int maxIndex=maxSeries.toInt(&convOK);
-
-    if ((!convOK) || (maxIndex < 0))
+    int minIndex=getIndex(minSeries, convOK, true);
+    if (!convOK)
     {
         return;
     }
 
-    if (maxIndex >= seriesCount)
+    if (maxSeries.contains("#"))
     {
-        maxIndex=seriesCount-1;
+        // Check if the end of the range is followed by a stepsize statement (min-max:step)
+        // If so, update the string that is parsed below for the end of the range and
+        // convert the step-size parameter
+        QStringList maxStringlist=maxSeries.split("#");
+
+        maxSeries=maxStringlist.at(0);
+        stepSize =maxStringlist.at(1).toInt(&convOK);
+
+        if (!convOK)
+        {
+            stepSize=1;
+        }
+    }
+
+    int maxIndex=getIndex(maxSeries, convOK, true);
+    if (!convOK)
+    {
+        return;
     }
 
     for (int i=minIndex; i<=maxIndex; i++)
     {
-        seriesState.setBit(i, value);
+        if ((i-minIndex) % stepSize == 0)
+        {
+            seriesState.setBit(i, value);
+        }
     }
 }
 
@@ -198,9 +265,9 @@ bool subMainClass::readConfig(QString modeFilePath)
         {
             for (int i=0; i<includeString.count(); i++)
             {
-                if (includeString.at(i).contains("-"))
+                if (includeString.at(i).contains(":"))
                 {
-                    QStringList rangeStringList=includeString.at(i).split("-");
+                    QStringList rangeStringList=includeString.at(i).split(":");
                     QString minString=rangeStringList.at(0);
                     QString maxString=rangeStringList.at(1);
 
@@ -209,11 +276,11 @@ bool subMainClass::readConfig(QString modeFilePath)
                 else
                 {
                     bool convOK=true;
-                    int seriesIndex=includeString.at(i).toInt(&convOK);
+                    int  index=getIndex(includeString.at(i), convOK, false);
 
-                    if ((convOK) && (seriesIndex>=0) && (seriesIndex<seriesCount))
+                    if (convOK)
                     {
-                        seriesState.setBit(seriesIndex,true);
+                        seriesState.setBit(index,true);
                     }
                 }
             }
@@ -229,9 +296,9 @@ bool subMainClass::readConfig(QString modeFilePath)
             break;
         }
 
-        if (excludeString.at(i).contains("-"))
+        if (excludeString.at(i).contains(":"))
         {
-            QStringList rangeStringList=excludeString.at(i).split("-");
+            QStringList rangeStringList=excludeString.at(i).split(":");
             QString minString=rangeStringList.at(0);
             QString maxString=rangeStringList.at(1);
 
@@ -240,11 +307,11 @@ bool subMainClass::readConfig(QString modeFilePath)
         else
         {
             bool convOK=true;
-            int seriesIndex=excludeString.at(i).toInt(&convOK);
+            int  index=getIndex(excludeString.at(i), convOK, false);
 
-            if ((convOK) && (seriesIndex>=0) && (seriesIndex<seriesCount))
+            if (convOK)
             {
-                seriesState.setBit(seriesIndex,false);
+                seriesState.setBit(index,false);
             }
         }
     }
