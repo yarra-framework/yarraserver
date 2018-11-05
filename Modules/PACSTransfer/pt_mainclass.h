@@ -27,6 +27,7 @@ public:
     QStringList cfg_IP;
     QStringList cfg_port;
     QStringList cfg_name;
+    QStringList cfg_dirmode;
 
     int cfg_count;
     bool storescuError;

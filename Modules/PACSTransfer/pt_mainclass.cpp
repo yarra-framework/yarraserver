@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define PT_VER        QString("0.4e")
+#define PT_VER        QString("0.4g")
 #define PT_MODE_ID    QString("PACSTransfer")
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
@@ -168,6 +168,8 @@ void ptMainClass::printUsage()
 
 void ptMainClass::processTransfer()
 {
+    int numberRetries=NUMBER_RETRIES;
+
     if (readConfig())
     {
         QString inputPath=args.at(2);
@@ -181,64 +183,102 @@ void ptMainClass::processTransfer()
         {
             OUT("Performing transfer to "+cfg_name.at(i));
 
-            /*
-            // Directory version
-            QString callCmd="storescu --timeout 20 +sd -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
-            callCmd+=args.at(2)+"/";
-            OUT("Command: "+callCmd);
-            runCommand(callCmd);
-            */
-
-            int numberRetries=NUMBER_RETRIES;
-
-            // File-by-file version to ensure right sending order
-            QString callCmd="";
-            // NOTE: File counter is j here, not i (i=PACS counter)
-            for (int j=0; j<allFiles.count(); j++)
+            if (cfg_dirmode.at(i).compare("true",Qt::CaseInsensitive)==0)
             {
-                // Combine always 100 DCMs into on call to increase speed
-                if (j % DCMS_PER_CALL==0)
-                {
-                    callCmd="storescu -to 60 -ta 60 -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
-                }
-                callCmd.append(" " + allFiles.at(j));
+                OUT("Sending in directory mode");
 
-                if ((j % DCMS_PER_CALL==DCMS_PER_CALL-1) || (j==allFiles.count()-1))
-                {
-                    // Initial value to get into the loop
-                    bool transferSuccess=false;
-                    int retryCount=0;
+                // Directory version
+                QString callCmd="storescu -to 60 -ta 60 +sd -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
+                callCmd+=args.at(2)+"/";
+                OUT("Command: "+callCmd);
 
-                    // Try sending the images several times
-                    while ((retryCount<numberRetries) && (!transferSuccess))
+                bool transferSuccess=false;
+                int retryCount=0;
+
+                // Try sending the images several times
+                while ((retryCount<numberRetries) && (!transferSuccess))
+                {
+                    // Execute the transfer
+                    transferSuccess=runCommand(callCmd);
+
+                    retryCount++;
+
+                    // If the transfer failed, wait before retrying (because the PACS might be
+                    // overloaded temporarily). Start with 10s and increase the wait time
+                    // with each repetition (10s, 20s, 30s, 40s, 50s).
+                    if ((!transferSuccess) && (retryCount<numberRetries))
                     {
-                        // Execute the transfer
-                        transferSuccess=runCommand(callCmd);
+                        OUT("WARNING: Retrying PACS transfer");
 
-                        retryCount++;
-
-                        // If the transfer failed, wait before retrying (because the PACS might be
-                        // overloaded temporarily). Start with 10s and increase the wait time
-                        // with each repetition (10s, 20s, 30s, 40s, 50s).
-                        if ((!transferSuccess) && (retryCount<numberRetries))
-                        {
-                            OUT("WARNING: Retrying PACS transfer at image "+QString::number(j)+" / "+QString::number(allFiles.count())+".");
-
-                            // Wait for some time (hoping that the PACSs recovers).
-                            // Increase the wait time with each repetition.
-                            int waitTime=retryCount*RETRY_PAUSETIME;
-                            QTest::qWait(waitTime);
-                        }
+                        // Wait for some time (hoping that the PACSs recovers).
+                        // Increase the wait time with each repetition.
+                        int waitTime=retryCount*RETRY_PAUSETIME;
+                        QTest::qWait(waitTime);
                     }
+                }
 
-                    // If there was a problem even after retrying, return a failure
-                    // value to Yarra that the transfer was not successfull.
-                    // If connecting to the PACS failed, skip the attempt for the other files. Otherwise,
-                    // the many timeouts will add up to a long delay. Continue with next PACS in the list.
-                    if (!transferSuccess)
+                // If there was a problem even after retrying, return a failure
+                // value to Yarra that the transfer was not successfull.
+                if (!transferSuccess)
+                {
+                    storescuError=true;
+                    break;
+                }
+            }
+            else
+            {
+                // File-by-file version to ensure right sending order
+                OUT("Sending in file-by-file mode");
+
+                QString callCmd="";
+
+                // NOTE: File counter is j here, not i (i=PACS counter)
+                for (int j=0; j<allFiles.count(); j++)
+                {
+                    // Combine always 100 DCMs into on call to increase speed
+                    if (j % DCMS_PER_CALL==0)
                     {
-                        storescuError=true;
-                        break;
+                        callCmd="storescu -to 60 -ta 60 -aet "+cfg_AET.at(i)+" -aec "+cfg_AEC.at(i)+" "+cfg_IP.at(i)+" "+cfg_port.at(i)+" ";
+                    }
+                    callCmd.append(" " + allFiles.at(j));
+
+                    if ((j % DCMS_PER_CALL==DCMS_PER_CALL-1) || (j==allFiles.count()-1))
+                    {
+                        // Initial value to get into the loop
+                        bool transferSuccess=false;
+                        int retryCount=0;
+
+                        // Try sending the images several times
+                        while ((retryCount<numberRetries) && (!transferSuccess))
+                        {
+                            // Execute the transfer
+                            transferSuccess=runCommand(callCmd);
+
+                            retryCount++;
+
+                            // If the transfer failed, wait before retrying (because the PACS might be
+                            // overloaded temporarily). Start with 10s and increase the wait time
+                            // with each repetition (10s, 20s, 30s, 40s, 50s).
+                            if ((!transferSuccess) && (retryCount<numberRetries))
+                            {
+                                OUT("WARNING: Retrying PACS transfer at image "+QString::number(j)+" / "+QString::number(allFiles.count())+".");
+
+                                // Wait for some time (hoping that the PACSs recovers).
+                                // Increase the wait time with each repetition.
+                                int waitTime=retryCount*RETRY_PAUSETIME;
+                                QTest::qWait(waitTime);
+                            }
+                        }
+
+                        // If there was a problem even after retrying, return a failure
+                        // value to Yarra that the transfer was not successfull.
+                        // If connecting to the PACS failed, skip the attempt for the other files. Otherwise,
+                        // the many timeouts will add up to a long delay. Continue with next PACS in the list.
+                        if (!transferSuccess)
+                        {
+                            storescuError=true;
+                            break;
+                        }
                     }
                 }
             }
@@ -269,25 +309,26 @@ bool ptMainClass::readConfig()
         if (settings.value(PT_MODE_ID+"/AEC", "").toString()!="")
         {
             cfg_count=1;
-            cfg_AEC.append ( settings.value(PT_MODE_ID+"/AEC" , "YARRA")   .toString() );
-            cfg_AET.append ( settings.value(PT_MODE_ID+"/AET" , "STORESCU").toString() );
-            cfg_IP.append  ( settings.value(PT_MODE_ID+"/IP"  , "")        .toString() );
-            cfg_port.append( settings.value(PT_MODE_ID+"/Port", "")        .toString() );
-            cfg_name.append( settings.value(PT_MODE_ID+"/Name", "PACS "+QString::number(cfg_count)).toString() );
+            cfg_AEC    .append(settings.value(PT_MODE_ID+"/AEC" , "YARRA")   .toString() );
+            cfg_AET    .append(settings.value(PT_MODE_ID+"/AET" , "STORESCU").toString() );
+            cfg_IP     .append(settings.value(PT_MODE_ID+"/IP"  , "")        .toString() );
+            cfg_port   .append(settings.value(PT_MODE_ID+"/Port", "")        .toString() );
+            cfg_name   .append(settings.value(PT_MODE_ID+"/Name", "PACS "+QString::number(cfg_count)).toString() );
+            cfg_dirmode.append(settings.value(PT_MODE_ID+"/DirMode", "false") .toString() );
         }
 
         // Now, read settings with a number index.
         while ((cfg_count<20) && (settings.value(PT_MODE_ID+"/AEC_" +QString::number(cfg_count+1), "").toString()!=""))
         {
             cfg_count++;
-            cfg_AEC.append ( settings.value(PT_MODE_ID+"/AEC_" +QString::number(cfg_count), "YARRA")   .toString() );
-            cfg_AET.append ( settings.value(PT_MODE_ID+"/AET_" +QString::number(cfg_count), "STORESCU").toString() );
-            cfg_IP.append  ( settings.value(PT_MODE_ID+"/IP_"  +QString::number(cfg_count), "")        .toString() );
-            cfg_port.append( settings.value(PT_MODE_ID+"/Port_"+QString::number(cfg_count), "")        .toString() );
-            cfg_name.append( settings.value(PT_MODE_ID+"/Name_"+QString::number(cfg_count), "PACS "+QString::number(cfg_count)).toString() );
+            cfg_AEC    .append(settings.value(PT_MODE_ID+"/AEC_" +QString::number(cfg_count), "YARRA")   .toString() );
+            cfg_AET    .append(settings.value(PT_MODE_ID+"/AET_" +QString::number(cfg_count), "STORESCU").toString() );
+            cfg_IP     .append(settings.value(PT_MODE_ID+"/IP_"  +QString::number(cfg_count), "")        .toString() );
+            cfg_port   .append(settings.value(PT_MODE_ID+"/Port_"+QString::number(cfg_count), "")        .toString() );
+            cfg_name   .append(settings.value(PT_MODE_ID+"/Name_"+QString::number(cfg_count), "PACS "+QString::number(cfg_count)).toString() );
+            cfg_dirmode.append(settings.value(PT_MODE_ID+"/DirMode_"+QString::number(cfg_count), "false") .toString() );
         }
     }
-
 
     if (cfg_count==0)
     {
@@ -301,8 +342,3 @@ bool ptMainClass::readConfig()
         return true;
     }
 }
-
-
-
-
-
