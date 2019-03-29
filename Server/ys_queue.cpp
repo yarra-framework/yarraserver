@@ -694,3 +694,95 @@ void ysQueue::checkForCrashedTask()
 }
 
 
+bool ysQueue::moveTaskToResumePath(ysJob* job)
+{
+    QString sourcePath=YSRA->staticConfig.workPath;
+
+    // Create own folder in resume path. Check for existance and recreate with timestamp if exists.
+    QDir resumeDir(YSRA->staticConfig.resumePath);
+    QString folderName=job->taskID;
+
+    // Check if subfolder with same task already exists. If so, add unique time stamp.
+    if (resumeDir.exists(folderName))
+    {
+        folderName+= "_" + uniqueID;
+    }
+
+    QString resumeFolder=YSRA->staticConfig.resumePath + "/" + folderName;
+
+    // Try to create a subfolder for the failed task
+    if (!resumeDir.mkdir(resumeFolder))
+    {
+        // Subfolder creation not successful, push files to base path
+        YS_SYSLOG_OUT("ERROR: Unable to create directory in resume path "+folderName);
+        return false;
+    }
+    else
+    {
+        YS_SYSLOG("Moving all task files into resume directory " + folderName);
+    }
+
+    // Now move files
+    if (!moveFolderRecurvisely(sourcePath, resumeFolder))
+    {
+        YS_SYSLOG_OUT("ERROR: Unable to move files to resume directory.");
+        return false;
+    }
+
+    return true;
+}
+
+
+// TODO: Test function!
+bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, int recursionLevel)
+{
+    if (recursionLevel > 999)
+    {
+        // Prevent infinite recursion, just in case
+        return false;
+    }
+
+    QDir dir;
+    dir.setPath(sourcePath);
+    sourcePath += QDir::separator();
+    targetPath += QDir::separator();
+
+    QStringList fileList=dir.entryList(QDir::Files);
+    foreach (QString fileName, fileList)
+    {
+        QString sourceFile = sourcePath + fileName;
+        QString targetFile = targetPath + fileName;
+
+        if (QFile::exists(targetFile))
+        {
+            // Error: File already exists. That should not be the case.
+            return false;
+        }
+
+        if (!QFile::rename(sourceFile, targetFile))
+        {
+            // Error: Moving the file failed.
+            return false;
+        }
+
+    }
+
+    QStringList dirList=dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    foreach (QString dirName, dirList)
+    {
+        QString sourceDir = sourcePath + dirName;
+        QString targetDir = targetPath + dirName;
+
+        if (!dir.mkpath(targetDir))
+        {
+            return false;
+        }
+
+        if (!moveFolderRecurvisely(sourceDir, targetDir, recursionLevel+1))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}

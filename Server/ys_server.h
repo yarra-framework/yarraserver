@@ -31,6 +31,7 @@ public slots:
 public:
     bool prepare();
     bool runLoop();
+    bool processJob();
 
     void setShutdownRequest();
     void forceHalt();
@@ -60,8 +61,6 @@ inline void ysServer::setShutdownRequest()
 {
     shutdownRequested=true;
 }
-
-
 
 
 inline void ysServer::safeWait(int ms)

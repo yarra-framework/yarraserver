@@ -6,6 +6,9 @@
 
 ysJob::ysJob()
 {    
+    state=YS_STATE_INITIALIZED;
+    type=YS_JOBTYPE_NEW;
+
     taskFile="";
     scanFile="";
     adjustmentFiles.clear();

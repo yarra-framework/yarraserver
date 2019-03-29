@@ -7,8 +7,34 @@
 class ysJob
 {
 public:
+
+    enum ysJobType
+    {
+        YS_JOBTYPE_NEW=0,
+        YS_JOBTYPE_RESUMED
+    };
+
+    enum ysJobState
+    {
+        YS_STATE_INITIALIZED=0,
+        YS_STATE_PREPARED,
+        YS_STATE_PREPROCESSING,
+        YS_STATE_RECONSTRUCTION,
+        YS_STATE_POSTPROCESSING,
+        YS_STATE_TRANSFER,
+        YS_STATE_COMPLETE
+    };
+
     ysJob();
     ~ysJob();
+
+    ysJobState  state;
+    void        setState(ysJobState newState);
+    ysJobState  getState();
+
+    ysJobType   type;
+    void        setType(ysJobType newType);
+    ysJobType   getType();
 
     QString     taskFile;
     QString     scanFile;
@@ -67,9 +93,34 @@ inline QString ysJob::getTaskID()
     return taskID;
 }
 
+
 inline void ysJob::setErrorReason(QString reason)
 {
     errorReason=reason;
+}
+
+
+inline void ysJob::setState(ysJobState newState)
+{
+    state=newState;
+}
+
+
+inline ysJob::ysJobState ysJob::getState()
+{
+    return state;
+}
+
+
+inline void ysJob::setType(ysJobType newType)
+{
+    type=newType;
+}
+
+
+inline ysJob::ysJobType ysJob::getType()
+{
+    return type;
 }
 
 

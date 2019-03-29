@@ -164,71 +164,37 @@ bool ysServer::runLoop()
                 queue.unlockTask(currentJob->taskFile);
 
                 // ## Run the individual processing modules
-
-                // 1. Preparation
-                if (!processor.prepareReconstruction(currentJob))
-                {
-                    YS_SYSTASKLOG_OUT("Processing preparation not successful.");
-                    procError=true;
-                }
-
-                if ((!procError) && (!haltRequested))
-                {
-                    if (!processor.prepareOutputDirs())
-                    {
-                        YS_SYSTASKLOG_OUT("Preparing working directories not successful.");
-                        procError=true;
-                    }
-                }
-
-                // 2. Postprocessing modules
-                if ((!procError) && (!haltRequested))
-                {
-                    if (!processor.runPreProcessing())
-                    {
-                        YS_SYSTASKLOG_OUT("Running pre-processing modules failed.");
-                        procError=true;
-                    }
-                }
-
-                // 3. Reconstruction module
-                if ((!procError) && (!haltRequested))
-                {
-                    if (!processor.runReconstruction())
-                    {
-                        YS_SYSTASKLOG_OUT("Running reconstruction module failed.");
-                        procError=true;
-                    }
-                }
-
-                // 4. Postprocessing modules
-                if ((!procError) && (!haltRequested))
-                {
-                    if (!processor.runPostProcessing())
-                    {
-                        YS_SYSTASKLOG_OUT("Running post-processing modules failed.");
-                        procError=true;
-                    }
-                }
-
-                // 5. Transfer module
-                if ((!procError) && (!haltRequested))
-                {
-                    if (!processor.runTransfer())
-                    {
-                        YS_SYSTASKLOG_OUT("Running transfer module failed.");
-                        procError=true;
-                    }
-                }
-
-                // 6. Clean up
-                processor.finish();
-                currentJob->setProcessingEnd();
+                procError=!processJob();
 
                 if (procError)
                 {
-                    // Move raw data to the fail location
-                    queue.moveTaskToFailPath(currentJob);
+                    bool saveResumeState=false;
+
+                    if (staticConfig.resumeTasks)
+                    {
+                        // Decide if the job should be stored for later resume
+                        if ((currentJob->getState()==ysJob::YS_STATE_TRANSFER)
+                           || (currentJob->getState()==ysJob::YS_STATE_POSTPROCESSING))
+                        {
+                            saveResumeState=true;
+                        }
+                    }
+
+                    if (saveResumeState)
+                    {
+                        // Save the task state in the resume folder
+                        if (!queue.moveTaskToResumePath(currentJob))
+                        {
+                            // Saving the resume state didn't work, so move the task to the fail folder instead
+                            saveResumeState=false;
+                        }
+                    }
+
+                    if (!saveResumeState)
+                    {
+                        // Move raw data to the fail location
+                        queue.moveTaskToFailPath(currentJob);
+                    }
 
                     YS_SYSTASKLOG("ERROR: Processing of task was not successful.");
                     notification.sendErrorNotification(currentJob);
@@ -289,6 +255,90 @@ bool ysServer::runLoop()
     YS_SYSLOG_OUT("Server stopped.");
 
     return true;
+}
+
+
+bool ysServer::processJob()
+{
+    bool success=false;
+
+    // 1. Preparation
+    if (!processor.prepareReconstruction(currentJob))
+    {
+        YS_SYSTASKLOG_OUT("Processing preparation not successful.");
+        success=false;
+    }
+
+    if ((success) && (!haltRequested))
+    {
+        if (!processor.prepareOutputDirs())
+        {
+            YS_SYSTASKLOG_OUT("Preparing working directories not successful.");
+            success=false;
+        }
+        else
+        {
+            currentJob->setState(ysJob::YS_STATE_PREPARED);
+        }
+    }
+
+    // 2. Postprocessing modules
+    if ((success) && (!haltRequested))
+    {
+        currentJob->setState(ysJob::YS_STATE_PREPROCESSING);
+
+        if (!processor.runPreProcessing())
+        {
+            YS_SYSTASKLOG_OUT("Running pre-processing modules failed.");
+            success=false;
+        }
+    }
+
+    // 3. Reconstruction module
+    if ((success) && (!haltRequested))
+    {
+        currentJob->setState(ysJob::YS_STATE_RECONSTRUCTION);
+
+        if (!processor.runReconstruction())
+        {
+            YS_SYSTASKLOG_OUT("Running reconstruction module failed.");
+            success=false;
+        }
+    }
+
+    // 4. Postprocessing modules
+    if ((success) && (!haltRequested))
+    {
+        currentJob->setState(ysJob::YS_STATE_POSTPROCESSING);
+
+        if (!processor.runPostProcessing())
+        {
+            YS_SYSTASKLOG_OUT("Running post-processing modules failed.");
+            success=false;
+        }
+    }
+
+    // 5. Transfer module
+    if ((success) && (!haltRequested))
+    {
+        currentJob->setState(ysJob::YS_STATE_TRANSFER);
+
+        if (!processor.runTransfer())
+        {
+            YS_SYSTASKLOG_OUT("Running transfer module failed.");
+            success=false;
+        }
+        else
+        {
+            currentJob->setState(ysJob::YS_STATE_COMPLETE);
+        }
+    }
+
+    // 6. Clean up
+    processor.finish();
+    currentJob->setProcessingEnd();
+
+    return success;
 }
 
 

@@ -18,6 +18,7 @@ ysStaticConfig::ysStaticConfig()
     storagePath    =execPath+"/finished";
     modulesPath    =execPath+"/modules";
     modulesUserPath=execPath+"/modules_user";
+    resumePath     =execPath+"/resume";
 
     matlabBinary="/usr/local/bin/matlab";
 
@@ -38,6 +39,9 @@ ysStaticConfig::ysStaticConfig()
     nightAfterMidnight=false;
 
     terminateAfterOneTask=false;
+
+    resumeTasks=false;
+    resumeDelayMin=20;
 }
 
 
@@ -64,6 +68,7 @@ bool ysStaticConfig::readConfiguration()
         storagePath    =configFile.value("Paths/Storage",     storagePath).toString();
         modulesPath    =configFile.value("Paths/Modules",     modulesPath).toString();
         modulesUserPath=configFile.value("Paths/ModulesUser", modulesUserPath).toString();
+        resumePath     =configFile.value("Paths/Resume",      resumePath).toString();
 
         matlabBinary   =configFile.value("Paths/MatlabBinary",matlabBinary).toString();
 
@@ -79,6 +84,9 @@ bool ysStaticConfig::readConfiguration()
         driveSpaceNotificationThresholdGB=configFile.value("Options/DriveSpaceNotificationThreshold", driveSpaceNotificationThresholdGB).toInt();
 
         terminateAfterOneTask=configFile.value("Options/TerminateAfterOneTask", terminateAfterOneTask).toBool();
+
+        resumeTasks   =configFile.value("Options/ResumeTasks", resumeTasks).toBool();
+        resumeDelayMin=configFile.value("Options/ResumeDelayMin", resumeDelayMin).toInt();
 
         useNightTasks=configFile.value("Options/UseNightTasks", useNightTasks).toBool();
         nightStart=QTime::fromString(configFile.value("Options/NightStart", nightStart.toString(Qt::ISODate)).toString(),Qt::ISODate);
@@ -118,6 +126,12 @@ bool ysStaticConfig::checkDirectories()
     if (!QFile::exists(storagePath))     { dirError=true; affectedDirectories+=storagePath    +" "; }
     if (!QFile::exists(modulesPath))     { dirError=true; affectedDirectories+=modulesPath    +" "; }
     if (!QFile::exists(modulesUserPath)) { dirError=true; affectedDirectories+=modulesUserPath+" "; }
+
+    if ((resumeTasks) && (!QFile::exists(resumePath)))
+    {
+        dirError=true;
+        affectedDirectories+=resumePath+" ";
+    }
 
     if (dirError)
     {

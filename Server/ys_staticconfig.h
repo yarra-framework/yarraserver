@@ -18,6 +18,7 @@ public:
     QString storagePath;
     QString modulesPath;
     QString modulesUserPath;
+    QString resumePath;
 
     QString matlabBinary;
 
@@ -26,26 +27,26 @@ public:
     QString notificationFromAddress;
     QString notificationDomainRestriction;
 
-    double memkillThreshold;
-    int    driveSpaceNeededGB;
-    int    driveSpaceNotificationThresholdGB;
+    double  memkillThreshold;
+    int     driveSpaceNeededGB;
+    int     driveSpaceNotificationThresholdGB;
+    int     processTimeout;
 
-    int processTimeout;
+    bool    useNightTasks;
+    QTime   nightStart;
+    QTime   nightEnd;
+    bool    nightAfterMidnight;
 
-    bool useNightTasks;
-    QTime nightStart;
-    QTime nightEnd;
-    bool nightAfterMidnight;
+    bool    terminateAfterOneTask;
 
-    bool terminateAfterOneTask;
+    bool    resumeTasks;
+    int     resumeDelayMin;
 
-    bool readConfiguration();
-    bool checkDirectories();
+    bool    readConfiguration();
+    bool    checkDirectories();
+    bool    allowNightReconNow();
 
     QString execPath;
-
-    bool allowNightReconNow();
-
 };
 
 #endif // YS_STATICCONFIG_H

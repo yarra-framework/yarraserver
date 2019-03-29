@@ -38,38 +38,37 @@ public:
 
     void finish();
 
-    QString reconDir;
-    QString transferDir;
-    QString tmpDir;
+    QString    reconDir;
+    QString    transferDir;
+    QString    tmpDir;
 
-    ysMode* mode;
+    ysMode*    mode;
 
-    QString callCmd;
-    QProcess* process;
+    QString    callCmd;
+    QProcess*  process;
 
-    QTimer* memcheckTimer;
+    QTimer*    memcheckTimer;
 
-    bool executeCommand();
+    bool       executeCommand();
 
-    int getUsedMemoryMB();
-    int getPhysicalMemoryMB();
-    int totalPhysicalMemory;
-    double memkillThreshold;
-    int memoryDuringKill;
-    bool disableMemKill;
+    int        getUsedMemoryMB();
+    int        getPhysicalMemoryMB();
+    int        totalPhysicalMemory;
+    double     memkillThreshold;
+    int        memoryDuringKill;
+    bool       disableMemKill;
 
-    QString processWorkingDirectory;
-    QString currentModuleType;
+    QString    processWorkingDirectory;
+    QString    currentModuleType;
 
     // Variables for detecting module problems
-    int    outputLines;
-    time_t lastOutput;
-    int    maxOutputIdleTime;
-    bool   errorReceived;
+    int        outputLines;
+    time_t     lastOutput;
+    int        maxOutputIdleTime;
+    bool       errorReceived;
+    int        terminationReason;
 
-    int terminationReason;
-
-    void haltAnyProcess();
+    void       haltAnyProcess();
 
 public slots:
     void logOutput();
