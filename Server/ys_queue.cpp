@@ -744,14 +744,19 @@ bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, int 
 
     QDir dir;
     dir.setPath(sourcePath);
+    dir.refresh();
     sourcePath += QDir::separator();
     targetPath += QDir::separator();
+
+    //YS_OUT(QString("DBG: Moving from ") + sourcePath + " to " + targetPath);
 
     QStringList fileList=dir.entryList(QDir::Files);
     foreach (QString fileName, fileList)
     {
         QString sourceFile = sourcePath + fileName;
         QString targetFile = targetPath + fileName;
+
+        //YS_OUT(QString("DBG: Moving file ") + sourceFile + " to " + targetFile);
 
         if (QFile::exists(targetFile))
         {
@@ -764,7 +769,6 @@ bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, int 
             // Error: Moving the file failed.
             return false;
         }
-
     }
 
     QStringList dirList=dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -779,6 +783,11 @@ bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, int 
         }
 
         if (!moveFolderRecurvisely(sourceDir, targetDir, recursionLevel+1))
+        {
+            return false;
+        }
+
+        if (!dir.rmdir(sourceDir))
         {
             return false;
         }

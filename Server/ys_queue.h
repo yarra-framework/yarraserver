@@ -45,6 +45,8 @@ public:
     bool lockTask(QString taskFile);
     bool unlockTask(QString taskFile);
 
+    bool moveFolderRecurvisely(QString sourcePath, QString targetPath, int recursionLevel=0);
+
 protected:
 
     QDir queueDir;
@@ -56,7 +58,6 @@ protected:
     bool displayedPermissionWarning;
 
     bool moveFiles(QStringList files, QString sourcePath, QString targetPath);
-    bool moveFolderRecurvisely(QString sourcePath, QString targetPath, int recursionLevel=0);
 
     int getAvailSpaceGB(QString path);
 

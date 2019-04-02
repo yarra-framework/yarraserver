@@ -137,6 +137,20 @@ bool ysServer::runLoop()
 
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
+    /*
+    //dbg
+    if (!queue.moveFolderRecurvisely(YSRA->staticConfig.workPath+"_dbg",YSRA->staticConfig.resumePath))
+    {
+        YS_OUT("DBG: Error moving files!");
+    }
+    else
+    {
+        YS_OUT("Success!");
+    }
+    return false;
+    //dbg
+    */
+
     while (!shutdownRequested)
     {
         status=YS_CTRL_IDLE;
