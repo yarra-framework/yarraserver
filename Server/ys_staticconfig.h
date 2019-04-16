@@ -47,6 +47,9 @@ public:
     bool    allowNightReconNow();
 
     QString execPath;
+    QString logServer;
+    QString logServerKey;
+
 };
 
 #endif // YS_STATICCONFIG_H

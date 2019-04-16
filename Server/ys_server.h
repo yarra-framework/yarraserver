@@ -11,6 +11,7 @@
 #include "ys_queue.h"
 #include "ys_statistics.h"
 #include "ys_notificationmail.h"
+#include <../Common/NetLogger/netlogger.h>
 
 
 class ysServer: public QObject
@@ -37,6 +38,7 @@ public:
     void forceHalt();
 
     void safeWait(int ms);
+    void setErrorReason(QString str);
 
     // Instances of the individual server modules
     ysLog              log;
@@ -51,11 +53,17 @@ public:
 
     QString            status;
 
+    QString errorReason;
+    NetLogger netLogger;
+
     bool shutdownRequested;
     bool haltRequested;
     int  returnCode;
 };
 
+inline void ysServer::setErrorReason(QString str) {
+    errorReason = str;
+}
 
 inline void ysServer::setShutdownRequest()
 {

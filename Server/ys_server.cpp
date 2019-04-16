@@ -23,6 +23,7 @@ void ysServer::run()
     }
     else
     {
+        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::FatalError, "Initialization of the server not successful",errorReason, 5000);
         returnCode=1;
     }
 
@@ -53,13 +54,22 @@ bool ysServer::prepare()
     {
         YS_OUT("ERROR: Reading server configuration failed.");
         YS_OUT("Cannot launch server. Shutting down.");
-
         return false;
+    }
+
+    if (staticConfig.logServer.isEmpty())
+    {
+        YS_SYSLOG_OUT("No logserver configured.");
+    }
+    else if (!netLogger.configure(staticConfig.logServer, EventInfo::SourceType::Server, staticConfig.serverName, staticConfig.logServerKey, true))
+    {
+        YS_SYSLOG_OUT("Could not connect to logserver at "+ staticConfig.logServer);
     }
 
     // Check if all directories are available
     if (!staticConfig.checkDirectories())
     {
+        setErrorReason("Directories unavailable");
         return false;
     }
 
@@ -76,6 +86,7 @@ bool ysServer::prepare()
     if (!dynamicConfig.prepare())
     {
         YS_SYSLOG_OUT("Cannot launch server. Shutting down.");
+        setErrorReason("Dynamic configuration error");
         return false;
     }
 
@@ -83,7 +94,7 @@ bool ysServer::prepare()
     {
         YS_SYSLOG_OUT("ERROR: Some reconstruction modes have not been configured correctly.");
         YS_SYSLOG_OUT("Please check configuration. Shutting down.");
-
+        setErrorReason("Invalid reconstruction modes");
         return false;
     }
 
@@ -91,13 +102,13 @@ bool ysServer::prepare()
     {
         YS_SYSLOG_OUT("ERROR: Preparing queing directories failed.");
         YS_SYSLOG_OUT("Please check installation and permissions. Shutting down.");
-
+        setErrorReason("unable to prepare queue");
         return false;
     }
 
+    YS_OUT("Prepare notification mailer...");
     // Prepare the notification mailer
     notification.prepare();
-
     return true;
 }
 
@@ -114,13 +125,33 @@ bool ysServer::runLoop()
         YS_OUT("");
         YS_OUT("If the server is not running, this behavior might result from a previous crash.");
         YS_OUT("Start the server with parameter --force to enforce a restart.");
-
+        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Error, "controlInterface not successful",errorReason, 5000);
         returnCode=1;
         return false;
     }
 
     YS_OUT("Server running (threadID " + QString::number((long)this->thread()->currentThreadId()) + ")");
     YS_SYSLOG_OUT("");
+
+
+    QProcess pingProcess;
+    pingProcess.start("hostname -A");
+    pingProcess.waitForFinished();
+    QString output(pingProcess.readAllStandardOutput());
+
+    QJsonObject object = QJsonObject::fromVariantMap(
+    QVariantMap {
+        {"version", YS_VERSION},
+        {"build", QString(__DATE__) + " " + QString(__TIME__) },
+        {"exec_path", staticConfig.execPath },
+        {"hostname", output.trimmed()},
+        {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
+    });
+    QJsonDocument doc(object);
+    QString bootInfo(doc.toJson(QJsonDocument::Compact));
+
+    netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "",bootInfo, 5000);
+
     queue.checkAndSendDiskSpaceNotification();
 
     // Check if files from a former reconstruction exist in the work directory. This could be
@@ -151,8 +182,27 @@ bool ysServer::runLoop()
     //dbg
     */
 
+    QTimer *timer = new QTimer(this);
+    timer->setInterval(1000*1*60);
+    connect(timer, &QTimer::timeout, [=]() {
+        QJsonObject object =
+        QJsonObject::fromVariantMap(
+            QVariantMap{
+                {"queue", queue.getAllQueue()},
+                {"job_state", currentJob? currentJob->getState() : -1 }
+            });
+        QJsonDocument doc(object);
+        QString queue(doc.toJson(QJsonDocument::Compact));
+        netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "",queue, 100);
+    } );
+    timer->start();
+
     while (!shutdownRequested)
     {
+//        if (timer.hasExpired(1000 * 60)) {
+//            netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "","", 100);
+//            timer.start();
+//        }
         status=YS_CTRL_IDLE;
 
         if (queue.isTaskAvailable())
@@ -166,6 +216,7 @@ bool ysServer::runLoop()
 
             if (currentJob)
             {
+                netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Start, EventInfo::Severity::Success, "",currentJob->toJson(), 5000);
                 status=log.getTaskLogFilename();
                 bool procError=false;
 
@@ -221,6 +272,8 @@ bool ysServer::runLoop()
                     YS_SYSTASKLOG("Processing of task was successful.");
                     notification.sendSuccessNotification(currentJob);
 
+                    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, EventInfo::Severity::Success, "job complete",currentJob->toJson(), 5000);
+
                     // In the terminate-after-task mode, the default return code is 1.
                     // Explicitly set it to 0 to allow detection that the task was successful.
                     if (staticConfig.terminateAfterOneTask)
@@ -232,7 +285,6 @@ bool ysServer::runLoop()
                 // Delete all temporary files
                 YS_TASKLOG("Removing all created files.");
                 queue.cleanWorkPath();
-
                 // Discard the current job
                 YS_FREE(currentJob);
 
@@ -249,7 +301,7 @@ bool ysServer::runLoop()
                 {
                     YS_SYSLOG_OUT(YS_WAITMESSAGE);
                 }
-            }           
+            }
         }
 
         // If only one task should be processed per server run, shutdown the server now
@@ -263,9 +315,10 @@ bool ysServer::runLoop()
     }
     YS_SYSLOG_OUT("Shutdown requested. Server going down.");
 
+    timer->deleteLater();
     queue.createServerHaltFile();
     controlInterface.finish();
-
+    YSRA->netLogger.postEventSync(EventInfo::Type::Shutdown, EventInfo::Detail::Information, EventInfo::Severity::Success, "","");
     YS_SYSLOG_OUT("Server stopped.");
 
     return true;
@@ -274,12 +327,13 @@ bool ysServer::runLoop()
 
 bool ysServer::processJob()
 {
-    bool success=false;
+    bool success=true;
 
     // 1. Preparation
     if (!processor.prepareReconstruction(currentJob))
     {
         YS_SYSTASKLOG_OUT("Processing preparation not successful.");
+        currentJob->setErrorReason("Processing preparation not successful.");
         success=false;
     }
 
@@ -288,6 +342,7 @@ bool ysServer::processJob()
         if (!processor.prepareOutputDirs())
         {
             YS_SYSTASKLOG_OUT("Preparing working directories not successful.");
+            currentJob->setErrorReason("Preparing working directories not successful.");
             success=false;
         }
         else
@@ -304,6 +359,7 @@ bool ysServer::processJob()
         if (!processor.runPreProcessing())
         {
             YS_SYSTASKLOG_OUT("Running pre-processing modules failed.");
+            currentJob->setErrorReason("Running pre-processing modules failed.");
             success=false;
         }
     }
@@ -316,6 +372,7 @@ bool ysServer::processJob()
         if (!processor.runReconstruction())
         {
             YS_SYSTASKLOG_OUT("Running reconstruction module failed.");
+            currentJob->setErrorReason("Running reconstruction module failed.");
             success=false;
         }
     }
@@ -328,6 +385,7 @@ bool ysServer::processJob()
         if (!processor.runPostProcessing())
         {
             YS_SYSTASKLOG_OUT("Running post-processing modules failed.");
+            currentJob->setErrorReason("Running post-processing module failed.");
             success=false;
         }
     }
@@ -340,6 +398,7 @@ bool ysServer::processJob()
         if (!processor.runTransfer())
         {
             YS_SYSTASKLOG_OUT("Running transfer module failed.");
+            currentJob->setErrorReason("Running transfer module failed.");
             success=false;
         }
         else
