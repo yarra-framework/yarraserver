@@ -277,6 +277,13 @@ bool NetLogger::postEventSync(EventInfo::Type type, EventInfo::Detail detail, Ev
     return postEventSync(networkError, networkStatusCode, type, detail, severity, info, data, timeoutMsec);
 }
 
+bool NetLogger::postEventSync(EventInfo::Type type, EventInfo::Detail detail, EventInfo::Severity severity, QString info, QVariantMap data, int timeoutMsec) {
+    QJsonObject object = QJsonObject::fromVariantMap(data);
+    QJsonDocument doc(object);
+    QString dataString(doc.toJson(QJsonDocument::Compact));
+    return postEventSync(type, detail, severity, info, dataString, timeoutMsec);
+}
+
 
 bool NetLogger::postEventSync(QNetworkReply::NetworkError& error, int& status_code, EventInfo::Type type, EventInfo::Detail detail, EventInfo::Severity severity, QString info, QString data, int timeoutMsec)
 {
@@ -382,7 +389,6 @@ bool NetLogger::postData(QUrlQuery query, QString endpt, QNetworkReply::NetworkE
 
     return true;
 }
-
 
 QString NetLogger::dnsLookup(QString address)
 {

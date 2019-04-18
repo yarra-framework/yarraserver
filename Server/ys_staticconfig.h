@@ -49,7 +49,7 @@ public:
     QString execPath;
     QString logServer;
     QString logServerKey;
-
+    int heartbeatSecs;
 };
 
 #endif // YS_STATICCONFIG_H
