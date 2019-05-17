@@ -87,6 +87,8 @@ bool ysQueue::isTaskAvailable()
 {
     isNightTime=YSRA->staticConfig.allowNightReconNow();
 
+    // TODO: Check for resume jobs (if exists, check if the delay time has exceeded)
+
     QStringList taskFilter;
     if (isNightTime)
     {
@@ -120,6 +122,8 @@ bool ysQueue::isTaskAvailable()
 
 ysJob* ysQueue::fetchTask()
 {
+    // TODO: Fetch resume task after checking that delay period has passed
+
     int fileCount=fileList.count();
     if (fileCount==0)
     {
@@ -329,11 +333,11 @@ bool ysQueue::cleanPath(QString path)
 }
 
 
-
-
 bool ysQueue::moveTaskToWorkPath(ysJob* job)
 {
     YS_SYSLOG("Moving all task file to work directory.");
+
+    // TODO: Handle case if the job is a resume case
 
     if (!moveFiles(job->getAllFiles(), YSRA->staticConfig.inqueuePath, YSRA->staticConfig.workPath))
     {

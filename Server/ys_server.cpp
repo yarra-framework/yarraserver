@@ -137,20 +137,6 @@ bool ysServer::runLoop()
 
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
-    /*
-    //dbg
-    if (!queue.moveFolderRecurvisely(YSRA->staticConfig.workPath+"_dbg",YSRA->staticConfig.resumePath))
-    {
-        YS_OUT("DBG: Error moving files!");
-    }
-    else
-    {
-        YS_OUT("Success!");
-    }
-    return false;
-    //dbg
-    */
-
     while (!shutdownRequested)
     {
         status=YS_CTRL_IDLE;
@@ -274,7 +260,7 @@ bool ysServer::runLoop()
 
 bool ysServer::processJob()
 {
-    bool success=false;
+    bool success=true;
 
     // 1. Preparation
     if (!processor.prepareReconstruction(currentJob))
@@ -296,7 +282,7 @@ bool ysServer::processJob()
         }
     }
 
-    // 2. Postprocessing modules
+    // 2. Preprocessing modules
     if ((success) && (!haltRequested))
     {
         currentJob->setState(ysJob::YS_STATE_PREPROCESSING);
