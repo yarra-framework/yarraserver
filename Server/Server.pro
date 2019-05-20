@@ -29,7 +29,8 @@ SOURCES += main.cpp \
     ys_queue.cpp \
     ys_statistics.cpp \
     ys_mode.cpp \
-    ../Common/yc_utils.cpp
+    ../Common/yc_utils.cpp \
+    ../Common/NetLogger/netlogger.cpp
 
 HEADERS += \
     ys_server.h \
@@ -46,4 +47,8 @@ HEADERS += \
     ys_queue.h \
     ys_statistics.h \
     ys_mode.h \
-    ../Common/yc_utils.h
+    ../Common/yc_utils.h \
+    ../Common/NetLogger/netlogger.h \
+    ../Common/NetLogger/netlog_events.h
+
+CONFIG += c++11

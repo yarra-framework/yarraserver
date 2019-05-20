@@ -3,7 +3,6 @@
 
 #include <QtCore>
 
-
 class ysJob
 {
 public:
@@ -75,6 +74,7 @@ public:
     QString errorReason;
     void setErrorReason(QString reason);
 
+    QString toJson();
 protected:
     void generateTaskID();
     void logJobInformation();

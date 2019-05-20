@@ -91,11 +91,15 @@ bool ysProcess::runPreProcessing()
         YS_TASKLOG("Cleaning temporary files.");
         cleanTmpDir();
 
+        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, preprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "preprocessing " + QString::number(i),callCmd);
+
         if (!preprocResult)
         {
             break;
         }
     }
+
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, preprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "preprocessing","");
 
     return preprocResult;
 }
@@ -139,6 +143,7 @@ bool ysProcess::runReconstruction()
         }
     }
 
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, reconResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "reconstruction",callCmd);
     return reconResult;
 }
 
@@ -178,12 +183,14 @@ bool ysProcess::runPostProcessing()
         YS_TASKLOG("Cleaning temporary files.");
         cleanTmpDir();
 
+        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, postprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "postprocessing " +  QString::number(i),callCmd);
+
         if (!postprocResult)
         {
             break;
         }
     }
-
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, postprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "postprocessing","");
     return postprocResult;
 }
 
@@ -229,7 +236,11 @@ bool ysProcess::runTransfer()
 
         YS_TASKLOG("Cleaning temporary files.");
         cleanTmpDir();
+
+        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, transferResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "transfer",callCmd);
     }
+
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, transferResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "transfer","");
 
     return transferResult;
 }

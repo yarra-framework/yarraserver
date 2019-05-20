@@ -2,7 +2,7 @@
 #include "ys_global.h"
 #include "ys_job.h"
 #include "ys_server.h"
-
+#include <iostream>
 
 ysNotificationMail::ysNotificationMail()
 {
@@ -21,12 +21,13 @@ void ysNotificationMail::prepare()
     footer = "<div style=\"color: #000; font-family: Arial, Helvetica, sans-serif;\">\n\
 <p style=\"font-size:85%; border-top: 1px solid #999; padding-top: 6px; margin-top: 30px;\">\n\
 <b style=\"color: #580F8B;\">YarraServer</b>&nbsp;&nbsp;-&nbsp;&nbsp;Version " + QString(YS_VERSION) +"</p></div>\n";
-
 }
 
 
 void ysNotificationMail::sendDiskSpaceNotification(QString dirs)
 {
+    YSRA->netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::LowDiskSpace, EventInfo::Severity::Warning, "","", 5000);
+
     if (YSRA->staticConfig.notificationErrorMail != "")
     {
         receivers = YSRA->staticConfig.notificationErrorMail;
@@ -59,6 +60,7 @@ It is advised to immediately resolve this situation to avoid possible processing
 
 void ysNotificationMail::sendDiskErrorNotification(QString dirs)
 {
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::LowDiskSpace, EventInfo::Severity::FatalError, "","", 5000);
     if (YSRA->staticConfig.notificationErrorMail != "")
     {
         receivers = YSRA->staticConfig.notificationErrorMail;
@@ -126,6 +128,7 @@ void ysNotificationMail::sendSuccessNotification(ysJob* job)
 
 void ysNotificationMail::sendErrorNotification(ysJob* job)
 {
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, EventInfo::Severity::Error, job->errorReason,job->toJson(), 5000);
     receivers=job->emailNotification;
 
     // Append the general error receiver to the list of receivers

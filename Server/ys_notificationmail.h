@@ -2,6 +2,7 @@
 #define YS_NOTIFICATIONMAIL_H
 
 #include <QtCore>
+#include <../Common/NetLogger/netlog_events.h>
 
 
 class ysJob;
@@ -30,7 +31,6 @@ public:
     QString subject;
     QString body;
     QString footer;
-
 };
 
 #endif // YS_NOTIFICATIONMAIL_H

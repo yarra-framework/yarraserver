@@ -119,6 +119,22 @@ bool ysQueue::isTaskAvailable()
     return false;
 }
 
+QStringList ysQueue::getAllQueue() {
+    QStringList taskFilter;
+
+    taskFilter << QString("*")+QString(YS_TASK_EXTENSION) << QString("*")+QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_NIGHT);
+    queueDir.setNameFilters(taskFilter);
+    QStringList fileList;
+
+    prioqueueDir.refresh();
+    queueDir.refresh();
+
+    // First, process then prio recons, afterwards the normal ones
+    fileList.clear();
+    fileList=prioqueueDir.entryList();
+    fileList.append(queueDir.entryList());
+    return fileList;
+}
 
 ysJob* ysQueue::fetchTask()
 {

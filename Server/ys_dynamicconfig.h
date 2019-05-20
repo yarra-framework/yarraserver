@@ -14,11 +14,11 @@ public:
     bool validateAllReconModes();
     bool isReconModeAvailable(QString reconMode);
 
+    QStringList availableReconModes;
+
 protected:
 
     QDir modesDir;
-
-    QStringList availableReconModes;
 
 };
 
