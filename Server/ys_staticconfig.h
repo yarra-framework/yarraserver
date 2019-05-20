@@ -37,19 +37,19 @@ public:
     QTime   nightEnd;
     bool    nightAfterMidnight;
 
-    bool    terminateAfterOneTask;
-
     bool    resumeTasks;
     int     resumeDelayMin;
+
+    QString logServerAddress;
+    QString logServerAPIKey;
+
+    bool    terminateAfterOneTask;
 
     bool    readConfiguration();
     bool    checkDirectories();
     bool    allowNightReconNow();
 
     QString execPath;
-    QString logServer;
-    QString logServerKey;
-
 };
 
 #endif // YS_STATICCONFIG_H

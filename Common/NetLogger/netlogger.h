@@ -1,3 +1,7 @@
+// Note: This is the YarraServer version of the NetLogger interface. It does not use
+//       domain validation because the configuration file is secured.
+
+
 #ifndef NETLOGGER_H
 #define NETLOGGER_H
 
@@ -6,6 +10,7 @@
 #include <QtNetwork>
 #include "netlog_events.h"
 
+
 class NetLogger
 {
 public:
@@ -13,14 +18,9 @@ public:
     NetLogger();
     ~NetLogger();
 
-    bool configure(QString path, EventInfo::SourceType sourceType, QString sourceId, QString key, bool skipDomainValidation=false);
+    bool configure(QString path, EventInfo::SourceType sourceType, QString sourceId, QString key);
     bool isConfigured();
     bool isConfigurationError();
-    bool isServerInSameDomain(QString serverPath);
-    bool retryDomainValidation();
-
-    static void log(QString str);
-    static void log(char const* str);
 
     QNetworkReply* postDataAsync(QUrlQuery query, QString endpt);
     QUrlQuery buildEventQuery(EventInfo::Type type, EventInfo::Detail detail, EventInfo::Severity severity, QString info, QString data);
@@ -29,8 +29,6 @@ public:
     void postEvent    (EventInfo::Type type, EventInfo::Detail detail=EventInfo::Detail::Information, EventInfo::Severity severity=EventInfo::Severity::Success, QString info=QString(""), QString data=QString(""));
     bool postEventSync(EventInfo::Type type, EventInfo::Detail detail=EventInfo::Detail::Information, EventInfo::Severity severity=EventInfo::Severity::Success, QString info=QString(""), QString data=QString(""), int timeoutMsec=NETLOG_EVENT_TIMEOUT);
     bool postEventSync(QNetworkReply::NetworkError& error, int& status_code, EventInfo::Type type, EventInfo::Detail detail=EventInfo::Detail::Information, EventInfo::Severity severity=EventInfo::Severity::Success, QString info=QString(""), QString data=QString(""), int timeoutMsec=NETLOG_POST_TIMEOUT);
-
-    static QString dnsLookup(QString address);
 
 protected:
 

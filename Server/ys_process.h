@@ -77,4 +77,5 @@ public slots:
 
 };
 
+
 #endif // YS_PROCESS_H

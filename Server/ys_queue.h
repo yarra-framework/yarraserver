@@ -46,7 +46,9 @@ public:
     bool unlockTask(QString taskFile);
 
     bool moveFolderRecurvisely(QString sourcePath, QString targetPath, int recursionLevel=0);
-    QStringList getAllQueue();
+
+    QStringList getAllQueueEntries();
+
 protected:
 
     QDir queueDir;
@@ -67,3 +69,4 @@ protected:
 
 
 #endif // YS_QUEUE_H
+

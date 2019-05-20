@@ -6,11 +6,11 @@
 #include "ys_runtimeaccess.h"
 #include "../Common/NetLogger/netlog_events.h"
 
-#define YS_VERSION          "0.94b3"
-#define YS_SLEEP_INTERVAL   10
-#define YS_CI_ID            "YarraServer"
-#define YS_CI_SETUPTIMOUT   1000
-#define YS_CI_FORCECMD      "--force"
+#define YS_VERSION              "0.94b3"
+#define YS_SLEEP_INTERVAL       10
+#define YS_CI_ID                "YarraServer"
+#define YS_CI_SETUPTIMOUT       1000
+#define YS_CI_FORCECMD          "--force"
 
 #define YS_MODE_EXTENSION       ".mode"
 #define YS_TASK_EXTENSION       ".task"
@@ -30,10 +30,10 @@
 #define YS_EXEC_MAXOUTPUTLINES  100000    // unit: lines
 #define YS_EXEC_MAXOUTPUTIDLE   1800      // unit: sec
 
-#define YS_WAITMESSAGE         "Waiting for next task..."
-#define YS_INI_INVALID         "!!FAIL"
+#define YS_WAITMESSAGE          "Waiting for next task..."
+#define YS_INI_INVALID          "!!FAIL"
 
-#define YS_PROCCOUNT_MAX       50
+#define YS_PROCCOUNT_MAX        50
 
 
 #define YS_FREE(x) if (x!=0) { delete x; x=0; }
@@ -43,7 +43,6 @@
 #define YSRA ysRuntimeAccess::getInstance()
 
 #define YS_OUT(x) std::cout << QString(x).toStdString() << std::endl;
-
 
 #define YS_SYSLOG(x) ysRuntimeAccess::getInstance()->log.sysLog(x)
 #define YS_TASKLOG(x) ysRuntimeAccess::getInstance()->log.taskLog(x)

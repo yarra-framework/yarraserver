@@ -3,10 +3,10 @@
 
 #include <QtCore>
 
+
 class ysJob
 {
 public:
-
     enum ysJobType
     {
         YS_JOBTYPE_NEW=0,
@@ -75,11 +75,12 @@ public:
     void setErrorReason(QString reason);
 
     QString toJson();
+
 protected:
     void generateTaskID();
     void logJobInformation();
-};
 
+};
 
 
 inline QString ysJob::getUniqueTaskID()

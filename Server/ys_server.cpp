@@ -57,15 +57,6 @@ bool ysServer::prepare()
         return false;
     }
 
-    if (staticConfig.logServer.isEmpty())
-    {
-        YS_SYSLOG_OUT("No logserver configured.");
-    }
-    else if (!netLogger.configure(staticConfig.logServer, EventInfo::SourceType::Server, staticConfig.serverName, staticConfig.logServerKey, true))
-    {
-        YS_SYSLOG_OUT("Could not connect to logserver at "+ staticConfig.logServer);
-    }
-
     // Check if all directories are available
     if (!staticConfig.checkDirectories())
     {
@@ -80,6 +71,16 @@ bool ysServer::prepare()
     if (staticConfig.terminateAfterOneTask)
     {
         YS_SYSLOG_OUT("Server will terminate after one task.");
+    }
+
+    // Connect to the logserver if configured
+    if (!staticConfig.logServerAddress.isEmpty())
+    {
+        if (!netLogger.configure(staticConfig.logServerAddress, EventInfo::SourceType::Server, staticConfig.serverName, staticConfig.logServerAPIKey))
+        {
+            YS_SYSLOG_OUT("Could not connect to logserver at "+ staticConfig.logServerAddress);
+            return false;
+        }
     }
 
     // Prepare the dynamic configuration
@@ -106,8 +107,8 @@ bool ysServer::prepare()
         return false;
     }
 
-    YS_OUT("Prepare notification mailer...");
     // Prepare the notification mailer
+    YS_OUT("Prepare notification mailer...");
     notification.prepare();
     return true;
 }
@@ -125,7 +126,9 @@ bool ysServer::runLoop()
         YS_OUT("");
         YS_OUT("If the server is not running, this behavior might result from a previous crash.");
         YS_OUT("Start the server with parameter --force to enforce a restart.");
-        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Error, "controlInterface not successful",errorReason, 5000);
+
+        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Error, "controlInterface not successful", errorReason, 5000);
+
         returnCode=1;
         return false;
     }
@@ -133,24 +136,29 @@ bool ysServer::runLoop()
     YS_OUT("Server running (threadID " + QString::number((long)this->thread()->currentThreadId()) + ")");
     YS_SYSLOG_OUT("");
 
+    // Send server information to the logserver (if configured)
+    if (netLogger.isConfigured())
+    {
+        QProcess hostnameProcess;
+        hostnameProcess.start("hostname -A");
+        hostnameProcess.waitForFinished();
+        QString output(hostnameProcess.readAllStandardOutput());
 
-    QProcess pingProcess;
-    pingProcess.start("hostname -A");
-    pingProcess.waitForFinished();
-    QString output(pingProcess.readAllStandardOutput());
+        QJsonObject object = QJsonObject::fromVariantMap(
+            QVariantMap
+            {
+                {"version",     YS_VERSION},
+                {"build",       QString(__DATE__) + " " + QString(__TIME__) },
+                {"exec_path",   staticConfig.execPath },
+                {"hostname",    output.trimmed()},
+                {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
+            }
+        );
+        QJsonDocument doc(object);
+        QString bootInfo(doc.toJson(QJsonDocument::Compact));
 
-    QJsonObject object = QJsonObject::fromVariantMap(
-    QVariantMap {
-        {"version", YS_VERSION},
-        {"build", QString(__DATE__) + " " + QString(__TIME__) },
-        {"exec_path", staticConfig.execPath },
-        {"hostname", output.trimmed()},
-        {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
-    });
-    QJsonDocument doc(object);
-    QString bootInfo(doc.toJson(QJsonDocument::Compact));
-
-    netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "",bootInfo, 5000);
+        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "", bootInfo, 5000);
+    }
 
     queue.checkAndSendDiskSpaceNotification();
 
@@ -168,27 +176,34 @@ bool ysServer::runLoop()
 
     YS_SYSLOG_OUT(YS_WAITMESSAGE);
 
-    QTimer *timer = new QTimer(this);
-    timer->setInterval(1000*1*60);
-    connect(timer, &QTimer::timeout, [=]() {
-        QJsonObject object =
-        QJsonObject::fromVariantMap(
-            QVariantMap{
-                {"queue", queue.getAllQueue()},
-                {"job_state", currentJob? currentJob->getState() : -1 }
-            });
-        QJsonDocument doc(object);
-        QString queue(doc.toJson(QJsonDocument::Compact));
-        netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "",queue, 100);
-    } );
-    timer->start();
+    // Setup timer to send queue information regularly to logserver
+    QTimer *logServerQueueTimer = new QTimer(this);
+
+    if (netLogger.isConfigured())
+    {
+        logServerQueueTimer->setInterval(1000*1*60);
+        connect(logServerQueueTimer, &QTimer::timeout, [=]() {
+            QJsonObject object =
+            QJsonObject::fromVariantMap(
+                QVariantMap {
+                    { "queue",     queue.getAllQueueEntries() },
+                    { "job_state", currentJob? currentJob->getState() : -1 }
+                });
+            QJsonDocument doc(object);
+            QString queue(doc.toJson(QJsonDocument::Compact));
+            netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "",queue, 100);
+        } );
+        logServerQueueTimer->start();
+    }
 
     while (!shutdownRequested)
     {
+
 //        if (timer.hasExpired(1000 * 60)) {
 //            netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "","", 100);
 //            timer.start();
 //        }
+
         status=YS_CTRL_IDLE;
 
         if (queue.isTaskAvailable())
@@ -202,7 +217,8 @@ bool ysServer::runLoop()
 
             if (currentJob)
             {
-                netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Start, EventInfo::Severity::Success, "",currentJob->toJson(), 5000);
+                netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Start, EventInfo::Severity::Success, "", currentJob->toJson(), 5000);
+
                 status=log.getTaskLogFilename();
                 bool procError=false;
 
@@ -258,7 +274,7 @@ bool ysServer::runLoop()
                     YS_SYSTASKLOG("Processing of task was successful.");
                     notification.sendSuccessNotification(currentJob);
 
-                    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, EventInfo::Severity::Success, "job complete",currentJob->toJson(), 5000);
+                    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, EventInfo::Severity::Success, "job complete" ,currentJob->toJson(), 5000);
 
                     // In the terminate-after-task mode, the default return code is 1.
                     // Explicitly set it to 0 to allow detection that the task was successful.
@@ -271,6 +287,7 @@ bool ysServer::runLoop()
                 // Delete all temporary files
                 YS_TASKLOG("Removing all created files.");
                 queue.cleanWorkPath();
+
                 // Discard the current job
                 YS_FREE(currentJob);
 
@@ -301,9 +318,12 @@ bool ysServer::runLoop()
     }
     YS_SYSLOG_OUT("Shutdown requested. Server going down.");
 
-    timer->deleteLater();
+    logServerQueueTimer->stop();
+    logServerQueueTimer->deleteLater();
+
     queue.createServerHaltFile();
     controlInterface.finish();
+
     YSRA->netLogger.postEventSync(EventInfo::Type::Shutdown, EventInfo::Detail::Information, EventInfo::Severity::Success, "","");
     YS_SYSLOG_OUT("Server stopped.");
 

@@ -42,8 +42,9 @@ ysStaticConfig::ysStaticConfig()
 
     resumeTasks=false;
     resumeDelayMin=20;
-    logServer = "";
-    logServerKey = "";
+
+    logServerAddress="";
+    logServerAPIKey ="";
 }
 
 
@@ -100,11 +101,10 @@ bool ysStaticConfig::readConfiguration()
             nightEnd=QTime(5,0);
             YS_OUT("ERROR: Invalid night time defined. Using default values.");
         }
-        logServer=configFile.value("LogServer/Path", logServer).toString();
-        logServerKey=configFile.value("LogServer/Key", logServer).toString();
 
+        logServerAddress=configFile.value("LogServer/Address", logServerAddress).toString();
+        logServerAPIKey =configFile.value("LogServer/APIKey",  logServerAPIKey ).toString();
     }
-
 
     if (nightStart<nightEnd)
     {

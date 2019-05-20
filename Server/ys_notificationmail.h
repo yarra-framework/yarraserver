@@ -2,6 +2,7 @@
 #define YS_NOTIFICATIONMAIL_H
 
 #include <QtCore>
+
 #include <../Common/NetLogger/netlog_events.h>
 
 

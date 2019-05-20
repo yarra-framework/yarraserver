@@ -158,23 +158,6 @@ bool ysJob::readTaskFile(QString filename, bool readCrashedTask)
     return true;
 }
 
-QString ysJob::toJson() {
-    QJsonObject object =
-    QJsonObject::fromVariantMap(
-        QVariantMap{
-            {"patientName", patientName},
-            {"accNumber", accNumber},
-            {"reconMode", reconMode},
-            {"systemName", systemName},
-            {"protocolName", protocolName},
-            {"submissionTime", submissionTime.toString("dd.MM.yyyy hh:mm:ss")},
-            {"errorReason", errorReason},
-            {"jobID", taskID + "_" + uniqueID}
-        });
-    QJsonDocument doc(object);
-    QString strJson(doc.toJson(QJsonDocument::Compact));
-    return strJson;
-}
 
 void ysJob::logJobInformation()
 {
@@ -204,7 +187,6 @@ void ysJob::logJobInformation()
     YS_TASKLOG("Adjustments:  " + adjFileList);
     YS_TASKLOG("");
 }
-
 
 
 QStringList ysJob::getAllFiles()
@@ -249,6 +231,28 @@ void ysJob::setProcessingEnd()
             duration=QString::number(hour) + " h " + QString::number(rmin) + " min " + QString::number(sec) + " sec";
         }
     }
+
     YS_TASKLOG("Duration of task: " + duration);
 }
 
+
+QString ysJob::toJson()
+{
+    QJsonObject object =
+        QJsonObject::fromVariantMap(
+            QVariantMap {
+                {"patientName",   patientName},
+                {"accNumber",     accNumber},
+                {"reconMode",     reconMode},
+                {"systemName",    systemName},
+                {"protocolName",  protocolName},
+                {"submissionTime",submissionTime.toString("dd.MM.yyyy hh:mm:ss")},
+                {"errorReason",   errorReason},
+                {"jobID",         taskID + "_" + uniqueID}
+            }
+        );
+    QJsonDocument doc(object);
+    QString strJson(doc.toJson(QJsonDocument::Compact));
+
+    return strJson;
+}
