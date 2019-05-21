@@ -17,6 +17,7 @@
 #define YS_TASK_EXTENSION_PRIO  "_prio"
 #define YS_TASK_EXTENSION_NIGHT "_night"
 #define YS_LOCK_EXTENSION       ".lock"
+#define YS_RESUME_EXTENSION     ".resume"
 #define YS_LOG_SERVER           "yarra.log"
 #define YS_HALT_FILE            "HALT"
 

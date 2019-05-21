@@ -76,6 +76,14 @@ public:
 
     QString toJson();
 
+    bool writeResumeInformation(QString path);
+
+    // The following two functions read information from a resume file
+    // in the provided path. They are implemented here to keep the
+    // functions dealing with resume files in one place.
+    static bool isFolderReadyForRetry(QString path);
+    static int  getRetryCountFromFolder(QString path);
+
 protected:
     void generateTaskID();
     void logJobInformation();

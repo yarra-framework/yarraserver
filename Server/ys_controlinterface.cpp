@@ -3,6 +3,7 @@
 #include "ys_server.h"
 #include "ys_controlapi.h"
 
+
 ysControlInterface::ysControlInterface()
 {
     parent=0;
@@ -25,7 +26,6 @@ ysControlInterface::~ysControlInterface()
     {
         ipcServer.close();
     }
-
 }
 
 
@@ -59,7 +59,6 @@ bool ysControlInterface::prepare()
         YS_OUT("Cannot launch server.");
         ipcError=true;
     }
-
 
     if (!ipcError)
     {

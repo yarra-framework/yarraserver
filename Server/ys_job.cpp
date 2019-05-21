@@ -256,3 +256,83 @@ QString ysJob::toJson()
 
     return strJson;
 }
+
+
+bool ysJob::writeResumeInformation(QString path)
+{
+    QString resumeFilename=path+"/"+taskID+YS_RESUME_EXTENSION;
+
+    {
+        QSettings resumeFile(resumeFilename, QSettings::IniFormat);
+
+        int retries=resumeFile.value("Information/Retries", 0).toInt();
+
+        QDateTime retryTime=QDateTime::currentDateTime();
+        QDateTime nextRetry=retryTime.addSecs(YSRA->staticConfig.resumeDelayMin * 60);
+
+        resumeFile.setValue("Information/Retries",   retries+1);
+        resumeFile.setValue("Information/NextRetry", nextRetry);
+        resumeFile.setValue("Information/State",     int(getState()));
+        resumeFile.setValue("ResumeLog/Retry"+QString::number(retries), retryTime);
+    }
+
+    if (!QFile::exists(resumeFilename))
+    {
+        YS_SYSLOG_OUT("ERORR: Unable to store resume information.");
+        return false;
+    }
+
+    return true;
+}
+
+
+bool ysJob::isFolderReadyForRetry(QString path)
+{
+    QDir dir(path);
+    dir.refresh();
+
+    // If the case is locked (i.e a lock file is present) then don't
+    // do anything right now
+    QStringList lockFilter;
+    lockFilter << QString("*")+QString(YS_LOCK_EXTENSION);
+    if (dir.entryList(lockFilter).count() > 0)
+    {
+        return false;
+    }
+
+    QStringList resumeFilter;
+    resumeFilter << QString("*")+QString(YS_RESUME_EXTENSION);
+    QStringList fileList=dir.entryList(resumeFilter);
+
+    if (fileList.isEmpty())
+    {
+        // If no resume information is found, then try to process the case
+        return true;
+    }
+
+    // TODO: Read the time from the resume file and compare with current time
+
+    return false;
+}
+
+
+int ysJob::getRetryCountFromFolder(QString path)
+{
+    QDir dir(path);
+    dir.refresh();
+
+    QStringList resumeFilter;
+    resumeFilter << QString("*")+QString(YS_RESUME_EXTENSION);
+    QStringList fileList=dir.entryList(resumeFilter);
+
+    if (fileList.isEmpty())
+    {
+        // If no resume information is found, then try to process the case
+        return 0;
+    }
+
+    // TODO: Open file and read the retry count
+
+    return 0;
+}
+

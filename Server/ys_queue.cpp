@@ -741,10 +741,8 @@ bool ysQueue::moveTaskToResumePath(ysJob* job)
         YS_SYSLOG_OUT("ERROR: Unable to create directory in resume path "+folderName);
         return false;
     }
-    else
-    {
-        YS_SYSLOG("Moving all task files into resume directory " + folderName);
-    }
+
+    YS_SYSLOG("Moving all task files into resume directory " + folderName);
 
     // Now move files
     if (!moveFolderRecurvisely(sourcePath, resumeFolder))
@@ -753,11 +751,12 @@ bool ysQueue::moveTaskToResumePath(ysJob* job)
         return false;
     }
 
+    // TODO: Store time stamp when job was moved to resume folder
+
     return true;
 }
 
 
-// TODO: Test function!
 bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, int recursionLevel)
 {
     if (recursionLevel > 999)
