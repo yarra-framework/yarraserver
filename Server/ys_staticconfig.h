@@ -39,6 +39,7 @@ public:
 
     bool    resumeTasks;
     int     resumeDelayMin;
+    int     resumeMaxRetries;
 
     QString logServerAddress;
     QString logServerAPIKey;

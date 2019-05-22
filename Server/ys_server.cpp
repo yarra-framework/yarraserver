@@ -222,13 +222,16 @@ bool ysServer::runLoop()
                 status=log.getTaskLogFilename();
                 bool procError=false;
 
-                // Delete all temporary files (should be clean, but it case the server
-                // previously crashed)
-                queue.cleanWorkPath();
+                if (currentJob->getType()==ysJob::YS_JOBTYPE_NEW)
+                {
+                    // Delete all temporary files (should be clean, but it case the server
+                    // previously crashed)
+                    queue.cleanWorkPath();
 
-                // Move all related files to work directory
-                queue.moveTaskToWorkPath(currentJob);
-                queue.unlockTask(currentJob->taskFile);
+                    // Move all related files to work directory
+                    queue.moveTaskToWorkPath(currentJob);
+                    queue.unlockTask(currentJob->taskFile);
+                }
 
                 // ## Run the individual processing modules
                 procError=!processJob();
@@ -249,11 +252,27 @@ bool ysServer::runLoop()
 
                     if (saveResumeState)
                     {
-                        // Save the task state in the resume folder
-                        if (!queue.moveTaskToResumePath(currentJob))
+                        // Check if job has already been resumed previously and abort if
+                        // max number of retries has been reached
+                        int previousRetries=ysJob::getRetryCountFromFolder(YSRA->staticConfig.workPath);
+
+                        if (previousRetries>YSRA->staticConfig.resumeMaxRetries)
                         {
-                            // Saving the resume state didn't work, so move the task to the fail folder instead
+                            YS_TASKLOG("Maximum number of task retries reached.");
+                            YS_TASKLOG("Declaring task as failed.");
+
                             saveResumeState=false;
+                        }
+                        else
+                        {
+                            YS_TASKLOG("Storing intermediate results for later retry.");
+
+                            // Save the task state in the resume folder
+                            if (!queue.moveTaskToResumePath(currentJob))
+                            {
+                                // Saving the resume state didn't work, so move the task to the fail folder instead
+                                saveResumeState=false;
+                            }
                         }
                     }
 
@@ -335,7 +354,7 @@ bool ysServer::processJob()
 {
     bool success=true;
 
-    // 1. Preparation
+    // 1. Preparation (has to be run by new and resumed jobs)
     if (!processor.prepareReconstruction(currentJob))
     {
         YS_SYSTASKLOG_OUT("Processing preparation not successful.");
@@ -345,7 +364,7 @@ bool ysServer::processJob()
 
     if ((success) && (!haltRequested))
     {
-        if (!processor.prepareOutputDirs())
+        if (!processor.prepareOutputDirs(currentJob->getState()))
         {
             YS_SYSTASKLOG_OUT("Preparing working directories not successful.");
             currentJob->setErrorReason("Preparing working directories not successful.");
@@ -353,12 +372,16 @@ bool ysServer::processJob()
         }
         else
         {
-            currentJob->setState(ysJob::YS_STATE_PREPARED);
+            // Don't change the job state for resumed jobs
+            if (currentJob->getType()==ysJob::YS_JOBTYPE_NEW)
+            {
+                currentJob->setState(ysJob::YS_STATE_PREPARED);
+            }
         }
     }
 
     // 2. Preprocessing modules
-    if ((success) && (!haltRequested))
+    if ((success) && (!haltRequested) && (currentJob->getState()<=ysJob::YS_STATE_PREPROCESSING))
     {
         currentJob->setState(ysJob::YS_STATE_PREPROCESSING);
 
@@ -371,7 +394,7 @@ bool ysServer::processJob()
     }
 
     // 3. Reconstruction module
-    if ((success) && (!haltRequested))
+    if ((success) && (!haltRequested) && (currentJob->getState()<=ysJob::YS_STATE_RECONSTRUCTION))
     {
         currentJob->setState(ysJob::YS_STATE_RECONSTRUCTION);
 
@@ -384,7 +407,7 @@ bool ysServer::processJob()
     }
 
     // 4. Postprocessing modules
-    if ((success) && (!haltRequested))
+    if ((success) && (!haltRequested) && (currentJob->getState()<=ysJob::YS_STATE_POSTPROCESSING))
     {
         currentJob->setState(ysJob::YS_STATE_POSTPROCESSING);
 
@@ -397,7 +420,7 @@ bool ysServer::processJob()
     }
 
     // 5. Transfer module
-    if ((success) && (!haltRequested))
+    if ((success) && (!haltRequested) && (currentJob->getState()<=ysJob::YS_STATE_TRANSFER))
     {
         currentJob->setState(ysJob::YS_STATE_TRANSFER);
 

@@ -40,8 +40,9 @@ ysStaticConfig::ysStaticConfig()
 
     terminateAfterOneTask=false;
 
-    resumeTasks=false;
-    resumeDelayMin=20;
+    resumeTasks     =false;
+    resumeDelayMin  =20;
+    resumeMaxRetries=5;
 
     logServerAddress="";
     logServerAPIKey ="";
@@ -88,12 +89,13 @@ bool ysStaticConfig::readConfiguration()
 
         terminateAfterOneTask=configFile.value("Options/TerminateAfterOneTask", terminateAfterOneTask).toBool();
 
-        resumeTasks   =configFile.value("Options/ResumeTasks", resumeTasks).toBool();
-        resumeDelayMin=configFile.value("Options/ResumeDelayMin", resumeDelayMin).toInt();
+        resumeTasks     =configFile.value("Options/ResumeTasks",      resumeTasks).toBool();
+        resumeDelayMin  =configFile.value("Options/ResumeDelayMin",   resumeDelayMin).toInt();
+        resumeMaxRetries=configFile.value("Options/ResumeMaxRetries", resumeMaxRetries).toInt();
 
         useNightTasks=configFile.value("Options/UseNightTasks", useNightTasks).toBool();
-        nightStart=QTime::fromString(configFile.value("Options/NightStart", nightStart.toString(Qt::ISODate)).toString(),Qt::ISODate);
-        nightEnd=QTime::fromString(configFile.value("Options/NightEnd", nightEnd.toString(Qt::ISODate)).toString(),Qt::ISODate);
+        nightStart   =QTime::fromString(configFile.value("Options/NightStart", nightStart.toString(Qt::ISODate)).toString(),Qt::ISODate);
+        nightEnd     =QTime::fromString(configFile.value("Options/NightEnd",   nightEnd.toString(Qt::ISODate)).toString(),  Qt::ISODate);
 
         if ((!nightStart.isValid()) || (!nightEnd.isValid()))
         {

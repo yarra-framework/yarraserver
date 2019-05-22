@@ -33,7 +33,7 @@ public:
     bool runPostProcessing();
     bool runTransfer();
 
-    bool prepareOutputDirs();
+    bool prepareOutputDirs(ysJob::ysJobState jobState);
     bool cleanTmpDir();
 
     void finish();

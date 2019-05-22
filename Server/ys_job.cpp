@@ -35,6 +35,8 @@ ysJob::ysJob()
     processingStart=submissionTime;
     processingEnd=submissionTime;
 
+    resumeLog.clear();
+
     errorReason="Unknown - Refer to log file";
 }
 
@@ -189,6 +191,23 @@ void ysJob::logJobInformation()
 }
 
 
+void ysJob::logResumeInformation()
+{
+    YS_TASKLOG("Resuming task after prior failure");
+    YS_TASKLOG("Resuming state: " + getStateName());
+    YS_TASKLOG("");
+    YS_TASKLOG("Resume history");
+    YS_TASKLOG("--------------");
+
+    for (int i=0; i<resumeLog.count(); i++)
+    {
+        YS_TASKLOG(resumeLog.at(i));
+    }
+
+    YS_TASKLOG("");
+}
+
+
 QStringList ysJob::getAllFiles()
 {
     QStringList allFiles;
@@ -310,9 +329,18 @@ bool ysJob::isFolderReadyForRetry(QString path)
         return true;
     }
 
-    // TODO: Read the time from the resume file and compare with current time
+    // Read the time from the resume file and compare with current time
+    QSettings resumeFile(fileList.at(0), QSettings::IniFormat);
+    QDateTime nextRetryTime=resumeFile.value("Information/NextRetry", QDateTime::currentDateTime()).toDateTime();
 
-    return false;
+    if (nextRetryTime<=QDateTime::currentDateTime())
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 
@@ -331,8 +359,46 @@ int ysJob::getRetryCountFromFolder(QString path)
         return 0;
     }
 
-    // TODO: Open file and read the retry count
+    // Open file and read the retry count
+    QSettings resumeFile(fileList.at(0), QSettings::IniFormat);
+    int retries=resumeFile.value("Information/Retries", 0).toInt();
 
-    return 0;
+    return retries;
 }
 
+
+bool ysJob::readResumeInformationFromFolder(QString path)
+{
+    QDir dir(path);
+    dir.refresh();
+
+    QStringList resumeFilter;
+    resumeFilter << QString("*")+QString(YS_RESUME_EXTENSION);
+    QStringList fileList=dir.entryList(resumeFilter);
+
+    if (fileList.isEmpty())
+    {
+        // If no resume information is found, then try to process the case
+        return false;
+    }
+
+    // Open file and read the retry count
+    QSettings  resumeFile(fileList.at(0), QSettings::IniFormat);
+    ysJobState resumeState=ysJobState(resumeFile.value("Information/State", 0).toInt());
+
+    int retries=resumeFile.value("Information/Retries", 0).toInt();
+
+    // Read the log of the previous attempts and store in the instance (will be written
+    // into the task log file)
+    resumeLog.clear();
+    for (int i=0; i<retries; i++)
+    {
+        QString entry="Retry "+QString::number(i)+": " + resumeFile.value("ResumeLog/Retry"+QString::number(i),"").toString();
+        resumeLog.append(entry);
+    }
+
+    // Set the state in which the task should be resumed
+    state=resumeState;
+
+    return true;
+}

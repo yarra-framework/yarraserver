@@ -49,13 +49,21 @@ public:
 
     QStringList getAllQueueEntries();
 
+    bool   checkAndLockResumeCase(QString folder);
+    ysJob* fetchResumeTask(QString folder);
+
 protected:
 
     QDir queueDir;
     QDir prioqueueDir;
+    QDir resumeDir;
 
     QStringList fileList;
+    QString     resumeCase;
+
     bool isNightTime;
+
+    QDateTime lastResumeCheck;
 
     bool displayedPermissionWarning;
 

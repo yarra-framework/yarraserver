@@ -21,6 +21,8 @@
 #define YS_LOG_SERVER           "yarra.log"
 #define YS_HALT_FILE            "HALT"
 
+#define YS_RESUME_CHECKINTERVAL 60
+
 #define YS_WORKDIR_TMP          "temp"
 #define YS_WORKDIR_RECON        "recon"
 #define YS_WORKDIR_POSTPROC     "postproc"

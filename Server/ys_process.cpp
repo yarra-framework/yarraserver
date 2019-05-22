@@ -249,9 +249,12 @@ bool ysProcess::runTransfer()
 }
 
 
-bool ysProcess::prepareOutputDirs()
+bool ysProcess::prepareOutputDirs(ysJob::ysJobState jobState)
 {
     YS_TASKLOG("Preparing temporary working directories.");
+
+    // NOTE: When resuming jobs, the subfolder in the work directory might already exist.
+    //       Therefore, the function does not check for return of false.
 
     QDir workDir;
     workDir.cd(YSRA->staticConfig.workPath);
@@ -277,6 +280,27 @@ bool ysProcess::prepareOutputDirs()
     // Now, that the directories are known, ask the mode object
     // to parse and finalize the command lines
     mode->parseCmdlines();
+
+    if (jobState!=ysJob::YS_STATE_INITIALIZED)
+    {
+        // If job is resumed, then clean the temp folder
+        cleanTmpDir();
+
+        if (jobState==ysJob::YS_STATE_POSTPROCESSING)
+        {
+            // If the job is resumed in the postprocessing state (i.e. all postproc modules are executed
+            // again), clean all output folder for the postproc modules. The last one will be the transfer
+            // folder. If postproc modules create files in the work folder directly, these files remain.
+            for (int i=0; i<mode->postprocCount; i++)
+            {
+                QString dirName=YSRA->staticConfig.workPath + "/" + YS_WORKDIR_POSTPROC+QString::number(i+1);
+                if (!ysQueue::cleanPath(dirName))
+                {
+                    YS_TASKLOG("WARNING: Unable to clean folder for resuming task " + dirName);
+                }
+            }
+        }
+    }
 
     return true;
 }

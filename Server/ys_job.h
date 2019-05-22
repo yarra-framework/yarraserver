@@ -30,6 +30,7 @@ public:
     ysJobState  state;
     void        setState(ysJobState newState);
     ysJobState  getState();
+    QString     getStateName();
 
     ysJobType   type;
     void        setType(ysJobType newType);
@@ -76,17 +77,22 @@ public:
 
     QString toJson();
 
+    void logJobInformation();
+    void logResumeInformation();
+
     bool writeResumeInformation(QString path);
+    bool readResumeInformationFromFolder(QString path);
 
     // The following two functions read information from a resume file
     // in the provided path. They are implemented here to keep the
     // functions dealing with resume files in one place.
-    static bool isFolderReadyForRetry(QString path);
-    static int  getRetryCountFromFolder(QString path);
+    static bool       isFolderReadyForRetry   (QString path);
+    static int        getRetryCountFromFolder (QString path);
 
 protected:
-    void generateTaskID();
-    void logJobInformation();
+    void generateTaskID();      
+
+    QStringList resumeLog;
 
 };
 
@@ -130,6 +136,30 @@ inline void ysJob::setType(ysJobType newType)
 inline ysJob::ysJobType ysJob::getType()
 {
     return type;
+}
+
+
+inline QString ysJob::getStateName()
+{
+    switch (state)
+    {
+    case YS_STATE_INITIALIZED:
+        return "INITIALIZED";
+    case YS_STATE_PREPARED:
+        return "PREPARED";
+    case YS_STATE_PREPROCESSING:
+        return "PREPROCESSING";
+    case YS_STATE_RECONSTRUCTION:
+        return "RECONSTRUCTION";
+    case YS_STATE_POSTPROCESSING:
+        return "POSTPROCESSING";
+    case YS_STATE_TRANSFER:
+        return "TRANSFER";
+    case YS_STATE_COMPLETE:
+        return "COMPLETE";
+    }
+
+    return "UNKNOWN";
 }
 
 

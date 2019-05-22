@@ -13,6 +13,7 @@ ysQueue::ysQueue()
     isNightTime=true;
     fileList.clear();
     displayedPermissionWarning=false;
+    resumeCase="";
 }
 
 
@@ -44,6 +45,19 @@ bool ysQueue::prepare()
     prioqueueDir.setNameFilters(priotaskFilter);
     prioqueueDir.setFilter(QDir::Files);
     prioqueueDir.setSorting(QDir::Time | QDir::Reversed);
+
+    if (YSRA->staticConfig.resumeTasks)
+    {
+        if (!resumeDir.cd(YSRA->staticConfig.inqueuePath))
+        {
+            YS_SYSLOG_OUT("ERROR: Unable to change to resume directory.");
+            return false;
+        }
+
+        resumeDir.setFilter (QDir::Dirs | QDir::NoDotAndDotDot);
+        resumeDir.setSorting(QDir::Time | QDir::Reversed);
+    }
+    lastResumeCheck=QDateTime::currentDateTime();
 
     lastDiskSpaceNotification=QDateTime::currentDateTime();
     diskSpaceNotificationSent=false;
@@ -86,8 +100,7 @@ void ysQueue::createServerHaltFile()
 bool ysQueue::isTaskAvailable()
 {
     isNightTime=YSRA->staticConfig.allowNightReconNow();
-
-    // TODO: Check for resume jobs (if exists, check if the delay time has exceeded)
+    resumeCase="";
 
     QStringList taskFilter;
     if (isNightTime)
@@ -110,6 +123,35 @@ bool ysQueue::isTaskAvailable()
     fileList.clear();
     fileList=prioqueueDir.entryList();
     fileList.append(queueDir.entryList());
+
+    // Check for jobs that can be resumed
+    if (YSRA->staticConfig.resumeTasks)
+    {
+        // Do this only once every minute to avoid unnecessary server load
+        if (lastResumeCheck.secsTo(QDateTime::currentDateTime()) > YS_RESUME_CHECKINTERVAL)
+        {
+            resumeDir.refresh();
+            QStringList resumeList=resumeDir.entryList();
+
+            // Go through all subfolders in the resume folder and check if one task is ready
+            // for retry (i.e. the retry delay is over or has been changed via the WebGUI)
+            for (int i=0; i<resumeList.count(); i++)
+            {
+                QString resumeTaskFolder=resumeDir.absoluteFilePath(resumeList.at(i));
+                if (ysJob::isFolderReadyForRetry(resumeTaskFolder))
+                {
+                    // Store the name of the resume case that should be processed
+                    resumeCase=resumeList.at(i);
+                    return true;
+                }
+            }
+
+            // Note: lastResumeCheck will only be updated if no resume jobs are available.
+            //       This is by intention so that the folder is checked again for additional
+            //       resume jobs during the next run.
+            lastResumeCheck=QDateTime::currentDateTime();
+        }
+    }
 
     if (fileList.count()>0)
     {
@@ -142,7 +184,19 @@ QStringList ysQueue::getAllQueueEntries()
 
 ysJob* ysQueue::fetchTask()
 {
-    // TODO: Fetch resume task after checking that delay period has passed
+    if ((YSRA->staticConfig.resumeTasks) && (!resumeCase.isEmpty()))
+    {
+        QString resumeCaseFolder=YSRA->staticConfig.resumePath+"/"+resumeCase;
+
+        // Check that the selected resume case still exists. If so, lock it so that
+        // it can't be modified by another process.
+        if (checkAndLockResumeCase(resumeCaseFolder))
+        {
+            // If case could be locked, move it back to the work folder and restore
+            // an instance of the ysJob class
+            return fetchResumeTask(resumeCaseFolder);
+        }
+    }
 
     int fileCount=fileList.count();
     if (fileCount==0)
@@ -253,6 +307,138 @@ ysJob* ysQueue::fetchTask()
 }
 
 
+bool ysQueue::checkAndLockResumeCase(QString folder)
+{
+    if (!QFile::exists(folder))
+    {
+        YS_SYSLOG_OUT("WARNING: Resume folder disappeared " + folder);
+        return false;
+    }
+
+    // Just call the lockfile resume.lock because we haven't identified the
+    // task file yet
+    QString lockFilename=folder+"/"+"resume"+YS_LOCK_EXTENSION;
+    QFile   lockFile(lockFilename);
+    lockFile.open(QIODevice::ReadWrite | QIODevice::Text);
+    QString placeHolder="YARRA";
+    lockFile.write(placeHolder.toLatin1());
+    lockFile.flush();
+    lockFile.close();
+
+    if (!QFile::exists(lockFilename))
+    {
+        YS_SYSLOG_OUT("WARNING: Unable to lock resume folder " + folder);
+        return false;
+    }
+
+    return true;
+}
+
+
+ysJob* ysQueue::fetchResumeTask(QString folder)
+{
+    if (!cleanWorkPath())
+    {
+        // TODO: This would be a severe error. Might make sense to shutdown the server.
+        YS_SYSLOG_OUT("ERROR: Unable to clean work folder for next processing.");
+        return 0;
+    }
+
+    // Generate a new unique ID
+    generateUniqueID();
+
+    if (!moveFolderRecurvisely(folder, YSRA->staticConfig.workPath))
+    {
+        YS_SYSLOG_OUT("ERROR: Unable to move resume task to work folder " + folder);
+
+        // TODO: Move broken case to fail folder
+
+        if (!cleanWorkPath())
+        {
+            // TODO: This would be a severe error. Might make sense to shutdown the server.
+            YS_SYSLOG_OUT("ERROR: Unable to clean work folder after failed resume preparation.");
+        }
+
+        return 0;
+    }
+
+    QString lockFilename=YSRA->staticConfig.workPath+"/"+"resume"+YS_LOCK_EXTENSION;
+
+    if (!QFile::exists(lockFilename))
+    {
+        YS_SYSLOG_OUT("WARNING: Lock file of resume case not found.");
+    }
+    else
+    {
+        if (!QFile::remove(lockFilename))
+        {
+            YS_SYSLOG_OUT("ERROR: Unable to delete lock file of resumed case.");
+        }
+    }
+
+    // Identify the .task file
+    QDir workDir(YSRA->staticConfig.workPath);
+
+    QStringList taskFilter;
+    taskFilter << QString("*")+QString(YS_TASK_EXTENSION) << QString("*")+QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_PRIO)
+               << QString("*")+QString(YS_TASK_EXTENSION)+QString(YS_TASK_EXTENSION_NIGHT);
+
+    workDir.setNameFilters(taskFilter);
+    workDir.refresh();
+
+    QString taskFilename="";
+
+    if (workDir.entryList().isEmpty())
+    {
+        YS_SYSLOG_OUT("ERROR: Resume task is missing task file.");
+
+        // TODO: Move broken case to fail folder
+
+        if (!cleanWorkPath())
+        {
+            // TODO: This would be a severe error. Might make sense to shutdown the server.
+            YS_SYSLOG_OUT("ERROR: Unable to clean work folder after failed resume preparation.");
+        }
+
+        return 0;
+    }
+    else
+    {
+        taskFilename=workDir.entryList().at(0);
+    }
+
+    ysJob* newJob=new ysJob;
+
+    // NOTE: Pass true as second parameter to indicate that the task file should be rad
+    //       from the work folder (and not queue folder)
+    if(!newJob->readTaskFile(taskFilename,true))
+    {
+        YS_SYSLOG_OUT("ERROR: Unable to read task file of resume job.");
+
+        // TODO: Move broken case to fail folder
+
+        delete newJob;
+        newJob=0;
+
+        return 0;
+    }
+
+    // Indicate that the job is being resumed, so that the already finished steps can be skipped.
+    newJob->setType (ysJob::YS_JOBTYPE_RESUMED);
+    newJob->readResumeInformationFromFolder(YSRA->staticConfig.workPath);
+    newJob->processingStart=QDateTime::currentDateTime();
+
+    // Create a new task-specific log
+    YSRA->log.openTaskLog(newJob->taskID, newJob->uniqueID);
+
+    // Write basic job information into the log
+    newJob->logJobInformation();
+    newJob->logResumeInformation();
+
+    return newJob;
+}
+
+
 QString ysQueue::getLockFilename(QString taskFilename)
 {
     QString lockFilename=taskFilename;
@@ -305,7 +491,6 @@ bool ysQueue::unlockTask(QString taskFile)
 
     return true;
 }
-
 
 
 bool ysQueue::cleanWorkPath()
@@ -409,9 +594,6 @@ bool ysQueue::moveTaskToFailPath(ysJob* job, bool filesInQueue)
         YS_SYSLOG_OUT("ERROR: Unable to move files to fail directory.");
         return false;
     }
-
-    // TODO: Copy subdir with reconstructed images, so that they can be re-sent to the PACS
-    //       without running the whole reconstruction again
 
     return true;
 }
@@ -545,7 +727,6 @@ void ysQueue::checkAndSendDiskSpaceNotification()
         lastDiskSpaceNotification=QDateTime::currentDateTime();
         diskSpaceNotificationSent=true;
     }
-
 }
 
 
@@ -742,16 +923,24 @@ bool ysQueue::moveTaskToResumePath(ysJob* job)
         return false;
     }
 
-    YS_SYSLOG("Moving all task files into resume directory " + folderName);
+    YS_SYSTASKLOG("Moving all task files into resume directory " + folderName);
 
-    // Now move files
+    // Now move files to created resume folder
     if (!moveFolderRecurvisely(sourcePath, resumeFolder))
     {
-        YS_SYSLOG_OUT("ERROR: Unable to move files to resume directory.");
+        YS_SYSTASKLOG("ERROR: Unable to move files to resume directory.");
         return false;
     }
 
-    // TODO: Store time stamp when job was moved to resume folder
+    YS_SYSTASKLOG("Done moving files.");
+
+    // Store time stamp when job was moved to resume folder. This also defines when the
+    // job can be resumed and increases the counter for limiting the maximum number of
+    // retries.
+    if (!job->writeResumeInformation(resumeFolder))
+    {
+        YS_SYSTASKLOG("ERORR: Unable to store resume information.");
+    }
 
     return true;
 }
