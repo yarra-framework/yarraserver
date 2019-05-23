@@ -329,8 +329,24 @@ bool ysJob::isFolderReadyForRetry(QString path)
         return true;
     }
 
-    // Read the time from the resume file and compare with current time
+    // Open the resume file to get information about the task status
     QSettings resumeFile(fileList.at(0), QSettings::IniFormat);
+
+    // Check if the processing has been paused via the WebGUI
+    bool isPaused=resumeFile.value("Information/Paused", false).toBool();
+
+    if (isPaused)
+    {
+        return false;
+    }
+
+    // Read the time from the resume file and compare with current time. If the value is
+    // an empty string, then process the job (this is used by the WebGUI for resetting the
+    // wait time).
+    if (resumeFile.value("Information/NextRetry", "").toString().isEmpty())
+    {
+        return true;
+    }
     QDateTime nextRetryTime=resumeFile.value("Information/NextRetry", QDateTime::currentDateTime()).toDateTime();
 
     if (nextRetryTime<=QDateTime::currentDateTime())

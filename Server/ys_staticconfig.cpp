@@ -134,6 +134,7 @@ bool ysStaticConfig::checkDirectories()
     if (!QFile::exists(storagePath))     { dirError=true; affectedDirectories+=storagePath    +" "; }
     if (!QFile::exists(modulesPath))     { dirError=true; affectedDirectories+=modulesPath    +" "; }
     if (!QFile::exists(modulesUserPath)) { dirError=true; affectedDirectories+=modulesUserPath+" "; }
+    if (!QFile::exists(resumePath))      { dirError=true; affectedDirectories+=resumePath     +" "; }
 
     if ((resumeTasks) && (!QFile::exists(resumePath)))
     {
