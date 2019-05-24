@@ -290,9 +290,9 @@ bool ysJob::writeResumeInformation(QString path)
         QDateTime nextRetry=retryTime.addSecs(YSRA->staticConfig.resumeDelayMin * 60);
 
         resumeFile.setValue("Information/Retries",   retries+1);
-        resumeFile.setValue("Information/NextRetry", nextRetry);
+        resumeFile.setValue("Information/NextRetry", nextRetry.toString(Qt::ISODate));
         resumeFile.setValue("Information/State",     int(getState()));
-        resumeFile.setValue("ResumeLog/Retry"+QString::number(retries), retryTime);
+        resumeFile.setValue("ResumeLog/Retry"+QString::number(retries), retryTime.toString(Qt::ISODate));
     }
 
     if (!QFile::exists(resumeFilename))
@@ -325,12 +325,12 @@ bool ysJob::isFolderReadyForRetry(QString path)
 
     if (fileList.isEmpty())
     {
-        // If no resume information is found, then try to process the case
-        return true;
+        // If no resume information is found, then we can't process the case
+        return false;
     }
 
     // Open the resume file to get information about the task status
-    QSettings resumeFile(fileList.at(0), QSettings::IniFormat);
+    QSettings resumeFile(dir.absoluteFilePath(fileList.at(0)), QSettings::IniFormat);
 
     // Check if the processing has been paused via the WebGUI
     bool isPaused=resumeFile.value("Information/Paused", false).toBool();
@@ -347,7 +347,7 @@ bool ysJob::isFolderReadyForRetry(QString path)
     {
         return true;
     }
-    QDateTime nextRetryTime=resumeFile.value("Information/NextRetry", QDateTime::currentDateTime()).toDateTime();
+    QDateTime nextRetryTime=QDateTime::fromString( resumeFile.value("Information/NextRetry", QDateTime::currentDateTime().toString(Qt::ISODate)).toString(), Qt::ISODate);
 
     if (nextRetryTime<=QDateTime::currentDateTime())
     {
@@ -376,7 +376,7 @@ int ysJob::getRetryCountFromFolder(QString path)
     }
 
     // Open file and read the retry count
-    QSettings resumeFile(fileList.at(0), QSettings::IniFormat);
+    QSettings resumeFile(dir.absoluteFilePath(fileList.at(0)), QSettings::IniFormat);
     int retries=resumeFile.value("Information/Retries", 0).toInt();
 
     return retries;
@@ -399,7 +399,7 @@ bool ysJob::readResumeInformationFromFolder(QString path)
     }
 
     // Open file and read the retry count
-    QSettings  resumeFile(fileList.at(0), QSettings::IniFormat);
+    QSettings  resumeFile(dir.absoluteFilePath(fileList.at(0)), QSettings::IniFormat);
     ysJobState resumeState=ysJobState(resumeFile.value("Information/State", 0).toInt());
 
     int retries=resumeFile.value("Information/Retries", 0).toInt();

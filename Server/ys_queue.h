@@ -45,7 +45,7 @@ public:
     bool lockTask(QString taskFile);
     bool unlockTask(QString taskFile);
 
-    bool moveFolderRecurvisely(QString sourcePath, QString targetPath, int recursionLevel=0);
+    bool moveFolderRecurvisely(QString sourcePath, QString targetPath, bool removeFolder=false, int recursionLevel=0);
 
     QStringList getAllQueueEntries();
 

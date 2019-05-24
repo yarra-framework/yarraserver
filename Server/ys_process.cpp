@@ -72,7 +72,7 @@ bool ysProcess::runPreProcessing()
 
     for (int i=0; i<mode->preprocCount; i++)
     {
-        YS_SYSTASKLOG_OUT("Now running pre processing module " + QString::number(i+1) + " ...");
+        YS_SYSTASKLOG_OUT("Now running pre processing module " + QString::number(i+1) + "...");
 
         callCmd=mode->getPreprocCmdLine(i);
         processWorkingDirectory=YSRA->staticConfig.workPath;
@@ -165,7 +165,7 @@ bool ysProcess::runPostProcessing()
 
     for (int i=0; i<mode->postprocCount; i++)
     {
-        YS_SYSTASKLOG_OUT("Now running post processing module " + QString::number(i+1) + " ...");
+        YS_SYSTASKLOG_OUT("Now running post processing module " + QString::number(i+1) + "...");
 
         callCmd=mode->getPostprocCmdLine(i);
         processWorkingDirectory=YSRA->staticConfig.workPath;

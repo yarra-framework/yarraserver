@@ -48,7 +48,7 @@ bool ysQueue::prepare()
 
     if (YSRA->staticConfig.resumeTasks)
     {
-        if (!resumeDir.cd(YSRA->staticConfig.inqueuePath))
+        if (!resumeDir.cd(YSRA->staticConfig.resumePath))
         {
             YS_SYSLOG_OUT("ERROR: Unable to change to resume directory.");
             return false;
@@ -57,7 +57,7 @@ bool ysQueue::prepare()
         resumeDir.setFilter (QDir::Dirs | QDir::NoDotAndDotDot);
         resumeDir.setSorting(QDir::Time | QDir::Reversed);
     }
-    lastResumeCheck=QDateTime::currentDateTime();
+    lastResumeCheck=QDateTime::currentDateTime().addSecs(-YS_RESUME_CHECKINTERVAL);
 
     lastDiskSpaceNotification=QDateTime::currentDateTime();
     diskSpaceNotificationSent=false;
@@ -192,6 +192,8 @@ ysJob* ysQueue::fetchTask()
         // it can't be modified by another process.
         if (checkAndLockResumeCase(resumeCaseFolder))
         {
+            YS_SYSLOG_OUT("Resuming task "+resumeCase);
+
             // If case could be locked, move it back to the work folder and restore
             // an instance of the ysJob class
             return fetchResumeTask(resumeCaseFolder);
@@ -347,7 +349,7 @@ ysJob* ysQueue::fetchResumeTask(QString folder)
     // Generate a new unique ID
     generateUniqueID();
 
-    if (!moveFolderRecurvisely(folder, YSRA->staticConfig.workPath))
+    if (!moveFolderRecurvisely(folder, YSRA->staticConfig.workPath, true))
     {
         YS_SYSLOG_OUT("ERROR: Unable to move resume task to work folder " + folder);
 
@@ -361,6 +363,8 @@ ysJob* ysQueue::fetchResumeTask(QString folder)
 
         return 0;
     }
+
+
 
     QString lockFilename=YSRA->staticConfig.workPath+"/"+"resume"+YS_LOCK_EXTENSION;
 
@@ -926,7 +930,7 @@ bool ysQueue::moveTaskToResumePath(ysJob* job)
     YS_SYSTASKLOG("Moving all task files into resume directory " + folderName);
 
     // Now move files to created resume folder
-    if (!moveFolderRecurvisely(sourcePath, resumeFolder))
+    if (!moveFolderRecurvisely(sourcePath, resumeFolder, false))
     {
         YS_SYSTASKLOG("ERROR: Unable to move files to resume directory.");
         return false;
@@ -946,7 +950,7 @@ bool ysQueue::moveTaskToResumePath(ysJob* job)
 }
 
 
-bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, int recursionLevel)
+bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, bool removeFolder, int recursionLevel)
 {
     if (recursionLevel > 999)
     {
@@ -994,7 +998,7 @@ bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, int 
             return false;
         }
 
-        if (!moveFolderRecurvisely(sourceDir, targetDir, recursionLevel+1))
+        if (!moveFolderRecurvisely(sourceDir, targetDir, removeFolder, recursionLevel+1))
         {
             return false;
         }
@@ -1003,6 +1007,12 @@ bool ysQueue::moveFolderRecurvisely(QString sourcePath, QString targetPath, int 
         {
             return false;
         }
+    }
+
+    if ((removeFolder) && (recursionLevel==0))
+    {
+        // If desired, remove the base folder as last step
+        dir.removeRecursively();
     }
 
     return true;

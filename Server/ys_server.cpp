@@ -258,14 +258,14 @@ bool ysServer::runLoop()
 
                         if (previousRetries>YSRA->staticConfig.resumeMaxRetries)
                         {
-                            YS_TASKLOG("Maximum number of task retries reached.");
-                            YS_TASKLOG("Declaring task as failed.");
+                            YS_SYSTASKLOG("Maximum number of task retries reached.");
+                            YS_SYSTASKLOG("Declaring task as failed.");
 
                             saveResumeState=false;
                         }
                         else
                         {
-                            YS_TASKLOG("Storing intermediate results for later retry.");
+                            YS_SYSTASKLOG("Storing intermediate results for later retry.");
 
                             // Save the task state in the resume folder
                             if (!queue.moveTaskToResumePath(currentJob))
