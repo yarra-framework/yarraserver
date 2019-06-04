@@ -4,7 +4,10 @@
 #include <iostream>
 #include <QtCore>
 #include "ys_runtimeaccess.h"
-#include "../Common/NetLogger/netlog_events.h"
+
+#ifdef YARRA_APP_SERVER
+    #include "../Common/NetLogger/netlog_events.h"
+#endif
 
 #define YS_VERSION              "0.94b3"
 #define YS_SLEEP_INTERVAL       10

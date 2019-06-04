@@ -127,7 +127,6 @@ void ysServerControl::launchServer()
 }
 
 
-
 void ysServerControl::printUsage()
 {
     YS_OUT("");
@@ -171,7 +170,6 @@ void ysServerControl::onConnected()
     case MODE_SHOWLOG:
         cmd=YS_CTRL_STATUS;
         break;
-
     default:
         YS_OUT("ERROR: Invalid mode selcted.");
         break;
@@ -266,6 +264,7 @@ void ysServerControl::readResponse()
             incorrectAnswer=true;
         }
         break;
+
     case MODE_HALT:
         if (response==YS_CTRL_ACK)
         {
@@ -276,6 +275,7 @@ void ysServerControl::readResponse()
             incorrectAnswer=true;
         }
         break;
+
     case MODE_STATUS:
         if (response==YS_CTRL_IDLE)
         {
@@ -332,8 +332,6 @@ void ysServerControl::readResponse()
 
 void ysServerControl::displayLog(QString logFile)
 {
-    bool execResult=true;
-
     QEventLoop q;
     connect(&process, SIGNAL(finished(int , QProcess::ExitStatus)), &q, SLOT(quit()));
     connect(&process, SIGNAL(error(QProcess::ProcessError)), &q, SLOT(quit()));

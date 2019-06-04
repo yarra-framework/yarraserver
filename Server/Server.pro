@@ -13,6 +13,7 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
+DEFINES += YARRA_APP_SERVER
 
 SOURCES += main.cpp \
     ys_server.cpp \
