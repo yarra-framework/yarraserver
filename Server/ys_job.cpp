@@ -171,6 +171,7 @@ QVariantMap ysJob::toJson() {
         {"errorReason", isError? errorReason : ""},
         {"id", taskID + "_" + uniqueID}
      };
+}
 
 void ysJob::logJobInformation()
 {
@@ -266,26 +267,6 @@ void ysJob::setProcessingEnd()
 }
 
 
-QString ysJob::toJson()
-{
-    QJsonObject object =
-        QJsonObject::fromVariantMap(
-            QVariantMap {
-                {"patientName",   patientName},
-                {"accNumber",     accNumber},
-                {"reconMode",     reconMode},
-                {"systemName",    systemName},
-                {"protocolName",  protocolName},
-                {"submissionTime",submissionTime.toString("dd.MM.yyyy hh:mm:ss")},
-                {"errorReason",   errorReason},
-                {"jobID",         taskID + "_" + uniqueID}
-            }
-        );
-    QJsonDocument doc(object);
-    QString strJson(doc.toJson(QJsonDocument::Compact));
-
-    return strJson;
-}
 
 
 bool ysJob::writeResumeInformation(QString path)

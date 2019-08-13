@@ -143,14 +143,13 @@ bool ysServer::runLoop()
         hostnameProcess.waitForFinished();
         QString output(hostnameProcess.readAllStandardOutput());
 
-    QVariantMap bootInfo  {
-        {"version", YS_VERSION},
-        {"build", QString(__DATE__) + " " + QString(__TIME__) },
-        {"exec_path", staticConfig.execPath },
-        {"hostname", output.trimmed()},
-        {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
-    };
-        );
+        QVariantMap bootInfo  {
+            {"version", YS_VERSION},
+            {"build", QString(__DATE__) + " " + QString(__TIME__) },
+            {"exec_path", staticConfig.execPath },
+            {"hostname", output.trimmed()},
+            {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
+        };
         netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "", bootInfo, 5000);
     }
 
@@ -173,15 +172,13 @@ bool ysServer::runLoop()
     // Setup timer to send queue information regularly to logserver
     QTimer *logServerQueueTimer = new QTimer(this);
 
-    if (netLogger.isConfigured())
-    timer->setInterval(1000*staticConfig.heartbeatSecs);
-        logServerQueueTimer->setInterval(1000*1*60);
+    if (netLogger.isConfigured()) {
+        logServerQueueTimer->setInterval(1000*staticConfig.heartbeatSecs);
         QVariantMap queue_info{
-            {"queue", queue.getAllQueue()},
+            {"queue", queue.getAllQueueEntries()},
             {"job_state", currentJob? currentJob->getState() : -1 }
         };
         netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "",queue_info, 100);
-        } );
         logServerQueueTimer->start();
     }
 

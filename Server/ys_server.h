@@ -12,7 +12,7 @@
 #include "ys_statistics.h"
 #include "ys_notificationmail.h"
 #include <../Common/NetLogger/netlogger.h>
-
+#include <QtCore>
 
 class ysServer: public QObject
 {
