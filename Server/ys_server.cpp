@@ -23,7 +23,7 @@ void ysServer::run()
     }
     else
     {
-        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::FatalError, "Initialization of the server not successful",errorReason, 5000);
+        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::FatalError, "Initialization of the server not successful",QVariantMap{{"error", errorReason}}, 5000);
         returnCode=1;
     }
 
@@ -126,8 +126,7 @@ bool ysServer::runLoop()
         YS_OUT("");
         YS_OUT("If the server is not running, this behavior might result from a previous crash.");
         YS_OUT("Start the server with parameter --force to enforce a restart.");
-
-        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Error, "controlInterface not successful", errorReason, 5000);
+        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Error, "controlInterface not successful",QVariantMap{{"error", errorReason}}, 5000);
 
         returnCode=1;
         return false;
@@ -144,19 +143,14 @@ bool ysServer::runLoop()
         hostnameProcess.waitForFinished();
         QString output(hostnameProcess.readAllStandardOutput());
 
-        QJsonObject object = QJsonObject::fromVariantMap(
-            QVariantMap
-            {
-                {"version",     YS_VERSION},
-                {"build",       QString(__DATE__) + " " + QString(__TIME__) },
-                {"exec_path",   staticConfig.execPath },
-                {"hostname",    output.trimmed()},
-                {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
-            }
+    QVariantMap bootInfo  {
+        {"version", YS_VERSION},
+        {"build", QString(__DATE__) + " " + QString(__TIME__) },
+        {"exec_path", staticConfig.execPath },
+        {"hostname", output.trimmed()},
+        {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
+    };
         );
-        QJsonDocument doc(object);
-        QString bootInfo(doc.toJson(QJsonDocument::Compact));
-
         netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "", bootInfo, 5000);
     }
 
@@ -180,18 +174,13 @@ bool ysServer::runLoop()
     QTimer *logServerQueueTimer = new QTimer(this);
 
     if (netLogger.isConfigured())
-    {
+    timer->setInterval(1000*staticConfig.heartbeatSecs);
         logServerQueueTimer->setInterval(1000*1*60);
-        connect(logServerQueueTimer, &QTimer::timeout, [=]() {
-            QJsonObject object =
-            QJsonObject::fromVariantMap(
-                QVariantMap {
-                    { "queue",     queue.getAllQueueEntries() },
-                    { "job_state", currentJob? currentJob->getState() : -1 }
-                });
-            QJsonDocument doc(object);
-            QString queue(doc.toJson(QJsonDocument::Compact));
-            netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "",queue, 100);
+        QVariantMap queue_info{
+            {"queue", queue.getAllQueue()},
+            {"job_state", currentJob? currentJob->getState() : -1 }
+        };
+        netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "",queue_info, 100);
         } );
         logServerQueueTimer->start();
     }
@@ -199,10 +188,6 @@ bool ysServer::runLoop()
     while (!shutdownRequested)
     {
 
-//        if (timer.hasExpired(1000 * 60)) {
-//            netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "","", 100);
-//            timer.start();
-//        }
 
         status=YS_CTRL_IDLE;
 
@@ -217,7 +202,7 @@ bool ysServer::runLoop()
 
             if (currentJob)
             {
-                netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Start, EventInfo::Severity::Success, "", currentJob->toJson(), 5000);
+                netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Start, EventInfo::Severity::Success, "job start",QVariantMap{{"job",currentJob->getUniqueTaskID()},{"job_info",currentJob->toJson()}}, 5000);
 
                 status=log.getTaskLogFilename();
                 bool procError=false;
@@ -293,7 +278,7 @@ bool ysServer::runLoop()
                     YS_SYSTASKLOG("Processing of task was successful.");
                     notification.sendSuccessNotification(currentJob);
 
-                    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, EventInfo::Severity::Success, "job complete" ,currentJob->toJson(), 5000);
+                    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, EventInfo::Severity::Success, "job complete",QVariantMap{{"job",currentJob->getUniqueTaskID()},{"stage","complete"},{"job_info",currentJob->toJson()}}, 5000);
 
                     // In the terminate-after-task mode, the default return code is 1.
                     // Explicitly set it to 0 to allow detection that the task was successful.

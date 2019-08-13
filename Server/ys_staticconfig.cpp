@@ -45,6 +45,7 @@ ysStaticConfig::ysStaticConfig()
     resumeMaxRetries=5;
 
     logServerAddress="";
+    heartbeatSecs = 60;
     logServerAPIKey ="";
 }
 
@@ -101,8 +102,9 @@ bool ysStaticConfig::readConfiguration()
         {
             nightStart=QTime(23,0);
             nightEnd=QTime(5,0);
-            YS_OUT("ERROR: Invalid night time defined. Using default values.");
+            YS_OUT("ERROR: Invalid night time defined.  Using default values.");
         }
+        heartbeatSecs=configFile.value("LogServer/HeartbeatSecs", heartbeatSecs).toInt();
 
         logServerAddress=configFile.value("LogServer/Address", logServerAddress).toString();
         logServerAPIKey =configFile.value("LogServer/APIKey",  logServerAPIKey ).toString();

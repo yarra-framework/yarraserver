@@ -160,6 +160,17 @@ bool ysJob::readTaskFile(QString filename, bool readCrashedTask)
     return true;
 }
 
+QVariantMap ysJob::toJson() {
+    return QVariantMap{
+        {"patientName", patientName},
+        {"accNumber", accNumber},
+        {"reconMode", reconMode},
+        {"systemName", systemName},
+        {"protocolName", protocolName},
+        {"submissionTime", submissionTime.toString("dd.MM.yyyy hh:mm:ss")},
+        {"errorReason", isError? errorReason : ""},
+        {"id", taskID + "_" + uniqueID}
+     };
 
 void ysJob::logJobInformation()
 {

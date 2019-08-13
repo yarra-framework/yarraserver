@@ -51,6 +51,7 @@ public:
     bool    allowNightReconNow();
 
     QString execPath;
+    int heartbeatSecs;
 };
 
 #endif // YS_STATICCONFIG_H

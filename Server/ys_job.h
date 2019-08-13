@@ -73,9 +73,10 @@ public:
     QString duration;
 
     QString errorReason;
+    bool isError;
     void setErrorReason(QString reason);
 
-    QString toJson();
+    QVariantMap toJson();
 
     void logJobInformation();
     void logResumeInformation();
@@ -111,6 +112,7 @@ inline QString ysJob::getTaskID()
 
 inline void ysJob::setErrorReason(QString reason)
 {
+    isError = true;
     errorReason=reason;
 }
 

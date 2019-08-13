@@ -91,7 +91,7 @@ bool ysProcess::runPreProcessing()
         YS_TASKLOG("Cleaning temporary files.");
         cleanTmpDir();
 
-        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, preprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "preprocessing " + QString::number(i), callCmd);
+        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, preprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "preprocessing step " + QString::number(i),QVariantMap{{"stage", "preprocessing"}, {"step",i}, {"cmd", callCmd}, {"job",YSRA->currentJob->getUniqueTaskID()}});
 
         if (!preprocResult)
         {
@@ -99,7 +99,7 @@ bool ysProcess::runPreProcessing()
         }
     }
 
-    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, preprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "preprocessing", "");
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, preprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "preprocessing",QVariantMap{{"stage", "preprocessing"}, {"step",-1}, {"job",YSRA->currentJob->getUniqueTaskID()}});
 
     return preprocResult;
 }
@@ -143,7 +143,7 @@ bool ysProcess::runReconstruction()
         }
     }
 
-    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, reconResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "reconstruction", callCmd);
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, reconResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "reconstruction",QVariantMap{{"stage", "reconstruction"}, {"step",0}, {"cmd", callCmd}, {"job",YSRA->currentJob->getUniqueTaskID()}});
 
     return reconResult;
 }
@@ -184,15 +184,14 @@ bool ysProcess::runPostProcessing()
         YS_TASKLOG("Cleaning temporary files.");
         cleanTmpDir();
 
-        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, postprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "postprocessing " +  QString::number(i), callCmd);
+        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, postprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "postprocessing step " +  QString::number(i),QVariantMap{{"stage", "postprocessing"}, {"step",i}, {"cmd", callCmd}, {"job",YSRA->currentJob->getUniqueTaskID()}});
 
         if (!postprocResult)
         {
             break;
         }
     }
-
-    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, postprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "postprocessing", "");
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, postprocResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "postprocessing",QVariantMap{{"stage", "postprocessing"}, {"step",-1}, {"job",YSRA->currentJob->getUniqueTaskID()}});
 
     return postprocResult;
 }
@@ -240,10 +239,10 @@ bool ysProcess::runTransfer()
         YS_TASKLOG("Cleaning temporary files.");
         cleanTmpDir();
 
-        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, transferResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "transfer",callCmd);
+        YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::Information, transferResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "transfer step "  +  QString::number(i),QVariantMap{{"stage", "transfer"}, {"step",i}, {"cmd", callCmd}, {"job",YSRA->currentJob->getUniqueTaskID()}});
     }
 
-    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, transferResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "transfer","");
+    YSRA->netLogger.postEventSync(EventInfo::Type::Processing, EventInfo::Detail::End, transferResult? EventInfo::Severity::Success : EventInfo::Severity::Error, "transfer",QVariantMap{{"stage", "transfer"}, {"job",YSRA->currentJob->getUniqueTaskID()}});
 
     return transferResult;
 }
