@@ -53,3 +53,6 @@ HEADERS += \
     ../Common/NetLogger/netlog_events.h
 
 CONFIG += c++11
+
+target.path = /opt/yarra
+INSTALLS += target

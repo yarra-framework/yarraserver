@@ -151,6 +151,8 @@ bool ysServer::runLoop()
             {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
         };
         netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "", bootInfo, 5000);
+    } else {
+        YS_SYSLOG_OUT("NetLogger is not configured.");
     }
 
     queue.checkAndSendDiskSpaceNotification();
@@ -174,11 +176,13 @@ bool ysServer::runLoop()
 
     if (netLogger.isConfigured()) {
         logServerQueueTimer->setInterval(1000*staticConfig.heartbeatSecs);
-        QVariantMap queue_info{
-            {"queue", queue.getAllQueueEntries()},
-            {"job_state", currentJob? currentJob->getState() : -1 }
-        };
-        netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "",queue_info, 100);
+        connect(logServerQueueTimer, &QTimer::timeout, [=]() {
+            QVariantMap queue_info{
+                {"queue", queue.getAllQueueEntries()},
+                {"job_state", currentJob? currentJob->getState() : -1 }
+            };
+            netLogger.postEventSync(EventInfo::Type::Heartbeat, EventInfo::Detail::Information, EventInfo::Severity::Success, "",queue_info, 100);
+        });
         logServerQueueTimer->start();
     }
 

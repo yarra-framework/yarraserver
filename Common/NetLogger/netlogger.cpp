@@ -70,11 +70,12 @@ bool NetLogger::configure(QString path, EventInfo::SourceType sourceType, QStrin
     source_id=sourceId;
     source_type=sourceType;
     apiKey=key;
-
-    if ((!path.isEmpty()) && (!key.isEmpty()))
-    {
-        configured=false;
-    }
+    configured=true;
+    return true;
+//    if ((!path.isEmpty()) && (!key.isEmpty()))
+//    {
+//        configured=false;
+//    }
 
     return configured;
 }
