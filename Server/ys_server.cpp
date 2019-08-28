@@ -150,7 +150,16 @@ bool ysServer::runLoop()
             {"hostname", output.trimmed()},
             {"recon_modes", QJsonArray::fromStringList(dynamicConfig.availableReconModes)}
         };
-        netLogger.postEventSync(EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "", bootInfo, 5000);
+
+        QNetworkReply::NetworkError networkError;
+        int networkStatusCode=0;
+        QString errorString;
+        bool result = netLogger.postEventSync(networkError, networkStatusCode,errorString, EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "", bootInfo, 5000);
+        if (!result) {
+            YS_SYSLOG_OUT("Boot message failed");
+            YS_SYSLOG_OUT(networkStatusCode);
+            YS_SYSLOG_OUT(errorString);
+        }
     } else {
         YS_SYSLOG_OUT("NetLogger is not configured.");
     }

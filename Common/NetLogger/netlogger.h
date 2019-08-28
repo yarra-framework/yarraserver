@@ -30,7 +30,7 @@ public:
     bool postEventSync(EventInfo::Type type, EventInfo::Detail detail=EventInfo::Detail::Information, EventInfo::Severity severity=EventInfo::Severity::Success, QString info=QString(""), QVariantMap data=QVariantMap{}, int timeoutMsec=NETLOG_EVENT_TIMEOUT);
     bool postEventSync(EventInfo::Type type, EventInfo::Detail detail=EventInfo::Detail::Information, EventInfo::Severity severity=EventInfo::Severity::Success, QString info=QString(""), QString data=QString(""), int timeoutMsec=NETLOG_EVENT_TIMEOUT);
     bool postEventSync(QNetworkReply::NetworkError& error, int& status_code, EventInfo::Type type, EventInfo::Detail detail=EventInfo::Detail::Information, EventInfo::Severity severity=EventInfo::Severity::Success, QString info=QString(""), QString data=QString(""), int timeoutMsec=NETLOG_POST_TIMEOUT);
-
+    bool postEventSync(QNetworkReply::NetworkError& error, int& status_code, QString& errorString, EventInfo::Type type, EventInfo::Detail detail, EventInfo::Severity severity, QString info, QVariantMap data, int timeoutMsec=NETLOG_EVENT_TIMEOUT);
     QString simpleJsonMessage(QString message);
 protected:
 
