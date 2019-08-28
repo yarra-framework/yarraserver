@@ -157,7 +157,7 @@ bool ysServer::runLoop()
         bool result = netLogger.postEventSync(networkError, networkStatusCode,errorString, EventInfo::Type::Boot, EventInfo::Detail::Information, EventInfo::Severity::Success, "", bootInfo, 5000);
         if (!result) {
             YS_SYSLOG_OUT("Boot message failed");
-            YS_SYSLOG_OUT(networkStatusCode);
+            YS_SYSLOG_OUT(QString(networkStatusCode));
             YS_SYSLOG_OUT(errorString);
         }
     } else {
