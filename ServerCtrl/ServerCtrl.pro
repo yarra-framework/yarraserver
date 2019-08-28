@@ -21,3 +21,6 @@ SOURCES += main.cpp \
 HEADERS += \
     ys_servercontrol.h \
     ys_parserformat.h
+
+target.path = /opt/yarra
+INSTALLS += target
