@@ -10,4 +10,4 @@ The Yarra framework, including all of its software components, comes without any
 The source is released under the GNU General Public License, GPL (http://www.gnu.org/copyleft/gpl.html). The source code is provided without warranties of any kind.
 
 ## More Information
-More information can be found on the project website http://yarraframework.com
+More information can be found on the project website http://yarraframework.com.
