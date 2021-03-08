@@ -13,8 +13,8 @@
 **
 */
 
-#include "dcmtk/config/cfunix.h"
 #include "dcmtk/config/osconfig.h"   // make sure OS specific configuration is included first
+//#include "dcmtk/config/cfunix.h"
 
 #include "dcmtk/dcmdata/dcdict.h"
 #ifdef ENABLE_BUILTIN_DICTIONARY

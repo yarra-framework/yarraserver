@@ -8,12 +8,10 @@
 #include "dcmtk/dcmdata/dcdeftag.h"
 #include "dcmtk/ofstd/ofstd.h"
 
-
-
 using namespace std;
 
 
-#define SUB_VER      QString("0.1a2")
+#define SUB_VER      QString("0.1a3")
 #define OUT(x)       cout << QString(x).toStdString() << endl;
 #define SUB_MODE_ID  QString("Subtraction")
 
@@ -352,7 +350,7 @@ bool subMainClass::readBaseline()
         if (fileList.at(i).seriesNumber==baselineSeries)
         {
             DcmFileFormat fileformat;
-            OFCondition status = fileformat.loadFile(fileList.at(i).fileName.toUtf8());
+            OFCondition status = fileformat.loadFile(fileList.at(i).fileName.toStdString().c_str());
 
             if (!status.good())
             {
@@ -450,7 +448,7 @@ bool subMainClass::createSubtractions(QString outputPath)
 bool subMainClass::processDICOM(QString inFilename, QString outFilename, int slice, int inSeries, int outSeries)
 {
     DcmFileFormat fileformat;
-    OFCondition status = fileformat.loadFile(inFilename.toUtf8());
+    OFCondition status = fileformat.loadFile(inFilename.toStdString().c_str());
 
     if (!status.good())
     {
@@ -555,7 +553,8 @@ bool subMainClass::processDICOM(QString inFilename, QString outFilename, int sli
 
     char uid[100];
     dcmGenerateUniqueIdentifier(uid, SITE_INSTANCE_UID_ROOT);
-    dataset->putAndInsertString(DCM_SOPInstanceUID,  uid);
+    dataset->putAndInsertString(DCM_SOPInstanceUID, uid);
+    dataset->putAndInsertString(DCM_MediaStorageSOPInstanceUID, uid, OFTrue);
 
     OFString seriesDescription;
     if (!dataset->findAndGetOFString(DCM_SeriesDescription, seriesDescription).good())
@@ -586,7 +585,9 @@ bool subMainClass::processDICOM(QString inFilename, QString outFilename, int sli
     }
     dataset->putAndInsertString(DCM_SeriesInstanceUID, seriesUIDList.at(inSeries).toUtf8());
 
-    status = fileformat.saveFile(outFilename.toUtf8(), EXS_LittleEndianExplicit);
+    status = fileformat.saveFile(outFilename.toStdString().c_str(), EXS_LittleEndianExplicit,
+                                 EET_UndefinedLength, EGL_recalcGL, EPD_noChange,
+                                 0,0, EWM_updateMeta);
 
     delete[] modData;
 
@@ -604,7 +605,8 @@ bool subMainClass::moveSourceImages(QString outputPath)
 {
     for (int i=0; i<fileList.count(); i++)
     {
-        if (!QFile::rename(fileList.at(i).fileName, outputPath+"/"+fileList.at(i).fileNameWithoutPath))
+        // Copy instead of move files, so that resuming suspended jobs is possible
+        if (!QFile::copy(fileList.at(i).fileName, outputPath+"/"+fileList.at(i).fileNameWithoutPath))
         {
             OUT("ERROR: Cannot move file "+fileList.at(i).fileNameWithoutPath+" to path "+outputPath);
             return false;

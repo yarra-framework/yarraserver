@@ -20,10 +20,12 @@ DEFINES += USE_NULL_SAFE_OFSTRING
 INCLUDEPATH += /usr/local/include/dcmtk/dcmnet/
 INCLUDEPATH += /usr/local/include/dcmtk/config/
 
-LIBS += /usr/lib/libdcmdata.a
-LIBS += /usr/lib/liboflog.a
-LIBS += /usr/lib/libofstd.a
-LIBS += -lz
+LIBS += /usr/local/lib/libdcmdata.a
+LIBS += /usr/local/lib/liboflog.a
+LIBS += /usr/local/lib/libofstd.a
+#LIBS += /usr/lib/x86_64-linux-gnu/libicuuc.a
+LIBS += -licuuc -licudata
+LIBS += -lz -ldl
 
 QMAKE_CXXFLAGS += -DENABLE_BUILTIN_DICTIONARY -DENABLE_PRIVATE_TAGS
 
