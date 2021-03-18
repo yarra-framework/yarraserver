@@ -9,7 +9,7 @@
     #include "../Common/NetLogger/netlog_events.h"
 #endif
 
-#define YS_VERSION              "0.94b3"
+#define YS_VERSION              "0.94b4"
 #define YS_SLEEP_INTERVAL       10
 #define YS_CI_ID                "YarraServer"
 #define YS_CI_SETUPTIMOUT       1000

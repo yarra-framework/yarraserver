@@ -275,10 +275,13 @@ bool ysServer::runLoop()
                     {
                         // Move raw data to the fail location
                         queue.moveTaskToFailPath(currentJob);
+                        YS_SYSTASKLOG("ERROR: Processing of task was not successful.");
+                        notification.sendErrorNotification(currentJob);
                     }
-
-                    YS_SYSTASKLOG("ERROR: Processing of task was not successful.");
-                    notification.sendErrorNotification(currentJob);
+                    else
+                    {
+                        YS_SYSTASKLOG("WARNING: Processing of task was not successful. Job will be suspended and resumed later.");
+                    }
                 }
                 else
                 {

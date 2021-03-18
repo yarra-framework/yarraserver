@@ -14,6 +14,7 @@ CONFIG   -= app_bundle
 TEMPLATE = app
 
 DEFINES += YARRA_APP_SERVER
+DEFINES += QT_COMPILING_QSTRING_COMPAT_CPP
 
 SOURCES += main.cpp \
     ys_server.cpp \
