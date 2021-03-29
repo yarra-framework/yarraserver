@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define DDP_VER        QString("0.1a")
+#define DDP_VER        QString("0.1b")
 
 #define OUT(x)        cout << QString(x).toStdString() << endl;
 #define EXEC_TIMEOUT  21600000
@@ -202,7 +202,8 @@ void ddpMainClass::processPostProc()
         QString sourceFile=inputPath+"/"+allFiles.at(i);
         QString targetFile=outputPath+"/"+allFiles.at(i);
 
-        if (!QFile::rename(sourceFile, targetFile))
+        // Copy the files (not move them), so that the job can be resumed later
+        if (!QFile::copy(sourceFile, targetFile))
         {
             moveError=true;
         }
