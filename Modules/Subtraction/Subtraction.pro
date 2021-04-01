@@ -23,9 +23,8 @@ INCLUDEPATH += /usr/local/include/dcmtk/config/
 LIBS += /usr/local/lib/libdcmdata.a
 LIBS += /usr/local/lib/liboflog.a
 LIBS += /usr/local/lib/libofstd.a
-#LIBS += /usr/lib/x86_64-linux-gnu/libicuuc.a
-LIBS += -licuuc -licudata
+LIBS += /usr/lib/x86_64-linux-gnu/libicuuc.a
+LIBS += /usr/lib/x86_64-linux-gnu/libicudata.a
 LIBS += -lz -ldl
 
 QMAKE_CXXFLAGS += -DENABLE_BUILTIN_DICTIONARY -DENABLE_PRIVATE_TAGS
-
